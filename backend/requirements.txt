@@ -1,0 +1,12 @@
+langchain
+langchain-community
+langchain-openai
+chromadb
+python-dotenv
+tiktoken
+sentence-transformers
+markdown
+groq
+fastapi 
+uvicorn
+argon2-cffi

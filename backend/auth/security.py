@@ -1,0 +1,31 @@
+from argon2 import PasswordHasher
+from datetime import datetime, timedelta
+from jose import jwt
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
+
+ph = PasswordHasher()
+
+SECRET_KEY = os.getenv("JWT_SECRET")
+ALGORITHM = os.getenv("JWT_ALGORITHM")
+EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", 60))
+
+
+def hash_password(password: str) -> str:
+    return ph.hash(password)
+
+
+def verify_password(password: str, hashed: str) -> bool:
+    try:
+        return ph.verify(hashed, password)
+    except:
+        return False
+
+
+def create_access_token(data: dict):
+    to_encode = data.copy()
+    expire = datetime.utcnow() + timedelta(minutes=EXPIRE_MINUTES)
+    to_encode.update({"exp": expire})
+    return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
