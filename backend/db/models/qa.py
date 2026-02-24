@@ -1,6 +1,6 @@
 from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey
 from sqlalchemy.sql import func
-from ai.db.base import Base
+from backend.db.base import Base
 
 class QuestionAnswer(Base):
     __tablename__ = "qa_logs"

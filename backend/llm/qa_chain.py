@@ -1,5 +1,5 @@
 from groq import Groq
-from ai.llm.prompt_templates import build_prompt
+from backend.llm.prompt_templates import build_prompt
 
 def run_qa_groq(docs, question: str):
     client = Groq()

@@ -2,20 +2,20 @@ from fastapi import FastAPI, Depends, HTTPException
 from pydantic import BaseModel
 from dotenv import load_dotenv
 from sqlalchemy.orm import Session
-from ai.db.session import SessionLocal
-from ai.db.models.user import User
-from ai.auth.security import hash_password, verify_password, create_access_token
+from backend.db.session import SessionLocal
+from backend.db.models.user import User
+from backend.auth.security import hash_password, verify_password, create_access_token
 from fastapi.security import OAuth2PasswordRequestForm
-from ai.db.deps import get_db
-from ai.auth.dependencies import get_current_user
-from ai.db.models.qa import QuestionAnswer
-from ai.ingest.confluence_loader import load_all_pages
-from ai.ingest.chunker import chunk_documents
-from ai.ingest.embedder import get_embedding_model
-from ai.retriever.vector_store import build_vector_store
-from ai.retriever.retriever import get_retriever
-from ai.llm.qa_chain import run_qa_groq
-from ai.config import TOP_K
+from backend.db.deps import get_db
+from backend.auth.dependencies import get_current_user
+from backend.db.models.qa import QuestionAnswer
+from backend.ingest.confluence_loader import load_all_pages
+from backend.ingest.chunker import chunk_documents
+from backend.ingest.embedder import get_embedding_model
+from backend.retriever.vector_store import build_vector_store
+from backend.retriever.retriever import get_retriever
+from backend.llm.qa_chain import run_qa_groq
+from backend.config import TOP_K
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 

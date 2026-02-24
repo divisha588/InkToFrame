@@ -1,4 +1,4 @@
-from ai.db.session import SessionLocal
+from backend.db.session import SessionLocal
 from fastapi import Depends
 
 def get_db():

@@ -1,6 +1,6 @@
-from ai.db.base import Base
-from ai.db.session import engine
-from ai.db.models import user, qa
+from backend.db.base import Base
+from backend.db.session import engine
+from backend.db.models import user, qa
 
 def init_db():
     Base.metadata.create_all(bind=engine)
