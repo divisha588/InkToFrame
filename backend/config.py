@@ -1,6 +1,6 @@
 import os
 
-BASE_DOCS_PATH = "../docs"   # markdown export from Confluence
+BASE_DOCS_PATH = "./docs"   # Documents directory (relative to project root)
 VECTOR_STORE_PATH = "./vector_store"
 
 EMBEDDING_MODEL = "all-MiniLM-L6-v2"
