@@ -14,11 +14,16 @@ from backend.llm.qa_chain import run_qa_groq
 from backend.config import TOP_K, BASE_DOCS_PATH, VECTOR_STORE_PATH, EMBEDDING_MODEL, CHUNK_SIZE, CHUNK_OVERLAP
 from fastapi.middleware.cors import CORSMiddleware
 
-app = FastAPI(title="Enterprise Knowledge Assistant")
+app = FastAPI(
+    title="Enterprise Knowledge Assistant",
+    docs_url="/docs",
+    redoc_url="/redoc",
+    openapi_url="/openapi.json"
+)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],  # frontend URL
+    allow_origins=["*"],  # Allow all origins for testing
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -28,6 +33,15 @@ load_dotenv()
 
 # --------- Global RAG objects ---------
 retriever = None
+
+# --------- Root endpoint ---------
+@app.get("/")
+def root():
+    return {
+        "message": "Knowledge Assistant API",
+        "docs": "http://localhost:8000/docs",
+        "status": "running"
+    }
 
 class RegisterRequest(BaseModel):
     email: str
