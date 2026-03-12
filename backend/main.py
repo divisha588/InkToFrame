@@ -5,19 +5,14 @@ from sqlalchemy.orm import Session
 from backend.db.session import SessionLocal
 from backend.db.models.user import User
 from backend.auth.security import hash_password, verify_password, create_access_token
-from fastapi.security import OAuth2PasswordRequestForm
 from backend.db.deps import get_db
 from backend.auth.dependencies import get_current_user
 from backend.db.models.qa import QuestionAnswer
-from backend.ingest.confluence_loader import load_all_pages
-from backend.ingest.chunker import chunk_documents
-from backend.ingest.embedder import get_embedding_model
-from backend.retriever.vector_store import build_vector_store
+from backend.ingest.ingestion import DocumentIngestionPipeline
 from backend.retriever.retriever import get_retriever
 from backend.llm.qa_chain import run_qa_groq
-from backend.config import TOP_K
+from backend.config import TOP_K, BASE_DOCS_PATH, VECTOR_STORE_PATH, EMBEDDING_MODEL, CHUNK_SIZE, CHUNK_OVERLAP
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
 
 app = FastAPI(title="Enterprise Knowledge Assistant")
 
@@ -82,15 +77,27 @@ def startup_event():
 
     print("🚀 Initializing RAG pipeline...")
 
-    docs = load_all_pages()
-    chunks = chunk_documents(docs)
+    try:
+        # Initialize pipeline with config paths
+        pipeline = DocumentIngestionPipeline(
+            docs_path=BASE_DOCS_PATH,
+            vector_store_path=VECTOR_STORE_PATH,
+            embedding_model=EMBEDDING_MODEL,
+            chunk_size=CHUNK_SIZE,
+            chunk_overlap=CHUNK_OVERLAP,
+        )
 
-    embeddings = get_embedding_model()
-    vector_store = build_vector_store(chunks, embeddings)
+        # Run complete ingestion: load → chunk → embed → vector store
+        vector_store = pipeline.ingest()
 
-    retriever = get_retriever(vector_store, TOP_K)
-
-    print("✅ RAG pipeline ready")
+        if vector_store:
+            retriever = get_retriever(vector_store, TOP_K)
+            print("✅ RAG pipeline ready")
+        else:
+            print("⚠️  Warning: No documents found for ingestion")
+    except Exception as e:
+        print(f"❌ Error initializing RAG pipeline: {str(e)}")
+        print("   The /ask endpoint will not be available")
 
 
 # --------- API models ---------
@@ -116,7 +123,8 @@ def ask_question(
     retrieved_docs = retriever.invoke(payload.question)
     answer = run_qa_groq(retrieved_docs, payload.question)
 
-    sources = list({d.metadata.get("title") for d in retrieved_docs})
+    # Extract source files from document metadata
+    sources = list({d.metadata.get("source_file", "Unknown") for d in retrieved_docs})
 
     # ---- Persist to DB ----
     qa_log = QuestionAnswer(
