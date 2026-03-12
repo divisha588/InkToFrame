@@ -11,13 +11,232 @@ from langchain_core.documents import Document
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_community.vectorstores import Chroma
 from langchain_community.embeddings import HuggingFaceEmbeddings
-
-from document_loader import DocumentLoader
-from embeddings import EmbeddingsManager
+from langchain_openai import OpenAIEmbeddings
+from langchain_community.document_loaders import (
+    TextLoader,
+    UnstructuredMarkdownLoader,
+    PyPDFLoader,
+)
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+
+# ============================================================================
+# DOCUMENT LOADER - Load documents from various formats
+# ============================================================================
+
+class DocumentLoader:
+    """Load documents from various file formats."""
+    
+    SUPPORTED_FORMATS = {
+        '.md': 'markdown',
+        '.markdown': 'markdown',
+        '.txt': 'text',
+        '.pdf': 'pdf',
+    }
+    
+    def load_documents(self, directory_path: str) -> List[Document]:
+        """Load all supported documents from a directory recursively."""
+        all_documents = []
+        directory = Path(directory_path)
+        
+        if not directory.exists():
+            logger.warning(f"⚠️  Directory does not exist: {directory_path}")
+            return []
+        
+        logger.info(f"🔍 Scanning directory: {directory_path}")
+        
+        for file_path in directory.rglob('*'):
+            if file_path.is_file():
+                suffix = file_path.suffix.lower()
+                if suffix in self.SUPPORTED_FORMATS:
+                    try:
+                        docs = self.load_document(str(file_path))
+                        if docs:
+                            all_documents.extend(docs)
+                            logger.info(f"✅ Loaded {len(docs)} chunks from {file_path.name}")
+                    except Exception as e:
+                        logger.error(f"❌ Error loading {file_path}: {str(e)}")
+        
+        return all_documents
+    
+    def load_document(self, file_path: str) -> List[Document]:
+        """Load a single document based on its file extension."""
+        file_path = Path(file_path)
+        
+        if not file_path.exists():
+            logger.error(f"❌ File not found: {file_path}")
+            return []
+        
+        suffix = file_path.suffix.lower()
+        
+        try:
+            if suffix in ['.md', '.markdown']:
+                return self._load_markdown(str(file_path))
+            elif suffix == '.pdf':
+                return self._load_pdf(str(file_path))
+            elif suffix == '.txt':
+                return self._load_text(str(file_path))
+            else:
+                logger.warning(f"⚠️  Unsupported file format: {suffix}")
+                return []
+        except Exception as e:
+            logger.error(f"❌ Error loading document {file_path}: {str(e)}")
+            return []
+    
+    def _load_markdown(self, file_path: str) -> List[Document]:
+        """Load markdown files."""
+        try:
+            loader = UnstructuredMarkdownLoader(file_path)
+            docs = loader.load()
+            
+            for doc in docs:
+                doc.metadata['source_file'] = Path(file_path).name
+                doc.metadata['file_type'] = 'markdown'
+            
+            return docs
+        except Exception as e:
+            logger.error(f"❌ Error loading markdown file {file_path}: {str(e)}")
+            return []
+    
+    def _load_pdf(self, file_path: str) -> List[Document]:
+        """Load PDF files."""
+        try:
+            loader = PyPDFLoader(file_path)
+            docs = loader.load()
+            
+            for doc in docs:
+                doc.metadata['source_file'] = Path(file_path).name
+                doc.metadata['file_type'] = 'pdf'
+            
+            return docs
+        except Exception as e:
+            logger.error(f"❌ Error loading PDF file {file_path}: {str(e)}")
+            return []
+    
+    def _load_text(self, file_path: str) -> List[Document]:
+        """Load plain text files."""
+        try:
+            loader = TextLoader(file_path, encoding='utf-8')
+            docs = loader.load()
+            
+            for doc in docs:
+                doc.metadata['source_file'] = Path(file_path).name
+                doc.metadata['file_type'] = 'text'
+            
+            return docs
+        except Exception as e:
+            logger.error(f"❌ Error loading text file {file_path}: {str(e)}")
+            return []
+    
+    @staticmethod
+    def get_supported_formats() -> dict:
+        """Get dictionary of supported file formats."""
+        return DocumentLoader.SUPPORTED_FORMATS.copy()
+
+
+# ============================================================================
+# EMBEDDINGS MANAGER - Create and manage embeddings
+# ============================================================================
+
+class EmbeddingsManager:
+    """Manage embeddings creation using various embedding models."""
+    
+    AVAILABLE_MODELS = {
+        'huggingface': {
+            'all-MiniLM-L6-v2': 'all-MiniLM-L6-v2',
+            'all-mpnet-base-v2': 'sentence-transformers/all-mpnet-base-v2',
+            'multilingual-e5-small': 'intfloat/multilingual-e5-small',
+            'multilingual-e5-large': 'intfloat/multilingual-e5-large',
+        },
+        'openai': {
+            'text-embedding-3-small': 'text-embedding-3-small',
+            'text-embedding-3-large': 'text-embedding-3-large',
+            'text-embedding-ada-002': 'text-embedding-ada-002',
+        }
+    }
+    
+    def __init__(self, model_name: str = 'all-MiniLM-L6-v2', model_type: str = 'huggingface'):
+        """Initialize embeddings manager."""
+        self.model_name = model_name
+        self.model_type = model_type
+        self._embeddings = None
+        
+        logger.info(f"🤖 Embeddings Manager initialized")
+        logger.info(f"   Model: {model_name}")
+        logger.info(f"   Type: {model_type}")
+    
+    def get_embeddings(self):
+        """Get or create embeddings instance."""
+        if self._embeddings is not None:
+            return self._embeddings
+        
+        if self.model_type == 'openai':
+            self._embeddings = self._get_openai_embeddings()
+        else:
+            self._embeddings = self._get_huggingface_embeddings()
+        
+        return self._embeddings
+    
+    def _get_huggingface_embeddings(self):
+        """Create HuggingFace embeddings."""
+        logger.info(f"📦 Loading HuggingFace embeddings model: {self.model_name}")
+        
+        try:
+            embeddings = HuggingFaceEmbeddings(
+                model_name=self.model_name,
+                model_kwargs={'device': 'cpu'},
+            )
+            logger.info(f"✅ Successfully loaded HuggingFace embeddings")
+            return embeddings
+        except Exception as e:
+            logger.error(f"❌ Error loading HuggingFace embeddings: {str(e)}")
+            logger.info(f"⚠️  Falling back to default model: all-MiniLM-L6-v2")
+            return HuggingFaceEmbeddings(
+                model_name='all-MiniLM-L6-v2',
+                model_kwargs={'device': 'cpu'},
+            )
+    
+    def _get_openai_embeddings(self):
+        """Create OpenAI embeddings."""
+        logger.info(f"🔑 Loading OpenAI embeddings model: {self.model_name}")
+        
+        api_key = os.getenv('OPENAI_API_KEY')
+        if not api_key:
+            logger.error("❌ OPENAI_API_KEY environment variable not set")
+            raise ValueError("OPENAI_API_KEY environment variable is required for OpenAI embeddings")
+        
+        try:
+            embeddings = OpenAIEmbeddings(
+                model=self.model_name,
+                api_key=api_key,
+            )
+            logger.info(f"✅ Successfully loaded OpenAI embeddings")
+            return embeddings
+        except Exception as e:
+            logger.error(f"❌ Error loading OpenAI embeddings: {str(e)}")
+            raise
+    
+    @staticmethod
+    def get_available_models(model_type: str = 'huggingface') -> dict:
+        """Get list of available embedding models."""
+        return EmbeddingsManager.AVAILABLE_MODELS.get(
+            model_type, 
+            EmbeddingsManager.AVAILABLE_MODELS['huggingface']
+        )
+    
+    @staticmethod
+    def validate_model(model_name: str, model_type: str = 'huggingface') -> bool:
+        """Validate if a model is available."""
+        available = EmbeddingsManager.get_available_models(model_type)
+        return model_name in available.values() or model_name in available.keys()
+
+
+# ============================================================================
+# DOCUMENT INGESTION PIPELINE - Main orchestrator
+# ============================================================================
 
 
 class DocumentIngestionPipeline:

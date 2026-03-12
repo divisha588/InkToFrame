@@ -11,33 +11,54 @@ This module provides a complete pipeline for reading documents and converting th
 - **Incremental Updates**: Add new documents to existing vector stores
 - **Comprehensive Logging**: Detailed logging throughout the ingestion process
 
-## Components
+## Architecture
 
-### 1. **DocumentIngestionPipeline** (`ingestion.py`)
-Main orchestrator that coordinates the entire ingestion workflow:
-- Loads documents from disk
-- Chunks documents into optimal sizes
-- Creates embeddings
-- Persists to vector store
+All functionality is consolidated into **2 minimal files** for maximum simplicity:
 
-### 2. **DocumentLoader** (`document_loader.py`)
-Handles loading documents from various file formats:
-- **Markdown** (.md, .markdown) - via UnstructuredMarkdownLoader
-- **PDF** (.pdf) - via PyPDFLoader
-- **Plain Text** (.txt) - via TextLoader
+### 1. **ingestion.py** (Core Pipeline)
+Contains three integrated classes:
 
-### 3. **EmbeddingsManager** (`embeddings.py`)
-Manages embedding model creation and caching:
-- **HuggingFace Models**: 
-  - `all-MiniLM-L6-v2` (default, fast, good quality)
-  - `all-mpnet-base-v2` (slower, better quality)
-  - Multilingual models available
-- **OpenAI Models**:
-  - `text-embedding-3-small` / `text-embedding-3-large`
-  - Requires OPENAI_API_KEY environment variable
+- **DocumentLoader**: Handles loading documents from various file formats
+  - Supports: Markdown (.md), PDF (.pdf), Plain Text (.txt)
+  - Recursively scans directories
+  - Adds source metadata to all documents
 
-### 4. **Utils** (`utils.py`)
-Helper functions for statistics and directory management
+- **EmbeddingsManager**: Manages embedding model creation and caching
+  - HuggingFace Models: `all-MiniLM-L6-v2`, `all-mpnet-base-v2`, multilingual variants
+  - OpenAI Models: `text-embedding-3-small`, `text-embedding-3-large`, `text-embedding-ada-002`
+  - Lazy-loads models (caching after first use)
+
+- **DocumentIngestionPipeline**: Main orchestrator
+  - Loads documents → Chunks → Creates embeddings → Builds vector store
+  - Supports incremental document addition
+  - Exports chunks as `Document` objects for consumption by retriever/llm modules
+
+### 2. **utils.py** (Helper Functions)
+Utility functions for:
+- Document statistics calculation
+- Logging setup
+- Directory management
+
+## Usage
+
+```python
+from backend.ingest.ingestion import DocumentIngestionPipeline
+
+# Initialize pipeline
+pipeline = DocumentIngestionPipeline(
+    docs_path="./documents",
+    vector_store_path="./vector_store",
+    embedding_model="all-MiniLM-L6-v2",
+    chunk_size=800,
+    chunk_overlap=150,
+)
+
+# Run complete ingestion
+vector_store = pipeline.ingest()
+
+# Or add new documents to existing store
+vector_store = pipeline.add_documents(["path/to/doc.md"])
+```
 
 ## Configuration
 
@@ -48,6 +69,36 @@ BASE_DOCS_PATH = "../docs"          # Document source directory
 VECTOR_STORE_PATH = "./vector_store" # Where embeddings are stored
 EMBEDDING_MODEL = "all-MiniLM-L6-v2" # Embedding model to use
 CHUNK_SIZE = 800                     # Characters per chunk
+CHUNK_OVERLAP = 150                  # Overlap between chunks
+```
+
+## Output Format
+
+Documents are output as LangChain `Document` objects with:
+```python
+{
+    "page_content": str,           # The actual text content
+    "metadata": {
+        "source_file": str,        # Original filename
+        "file_type": str,          # 'markdown', 'pdf', or 'text'
+    }
+}
+```
+
+These are directly compatible with:
+- `retriever/vector_store.py` - for vector store creation
+- `llm/qa_chain.py` - for RAG queries
+- `main.py` - for API integration
+
+## File Structure
+
+```
+ingest/
+  __init__.py         # Package initialization
+  ingestion.py        # All core pipeline code (DocumentLoader, EmbeddingsManager, DocumentIngestionPipeline)
+  utils.py            # Helper functions
+  README.md           # This file
+```
 CHUNK_OVERLAP = 150                  # Overlap between chunks
 ```
 
