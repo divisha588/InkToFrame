@@ -12,6 +12,7 @@ from backend.ingest.ingestion import DocumentIngestionPipeline
 from backend.retriever.retriever import get_retriever
 from backend.llm.qa_chain import run_qa_groq
 from backend.config import TOP_K, BASE_DOCS_PATH, VECTOR_STORE_PATH, EMBEDDING_MODEL, CHUNK_SIZE, CHUNK_OVERLAP
+from backend.llm.document_conversation import convert_document_to_conversation
 from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI(
@@ -124,6 +125,23 @@ class AskResponse(BaseModel):
     sources: list[str]
 
 
+# --------- Document Conversation API models ---------
+class DocumentConversationRequest(BaseModel):
+    file_path: str
+
+
+class ConversationMessage(BaseModel):
+    speaker: str
+    message: str
+
+
+class DocumentConversationResponse(BaseModel):
+    summary: str
+    analysis: str
+    conversation: list[ConversationMessage]
+    document_info: dict
+
+
 # --------- API ---------
 @app.post("/ask", response_model=AskResponse)
 def ask_question(
@@ -156,3 +174,39 @@ def ask_question(
         "answer": answer,
         "sources": sources
     }
+
+
+# --------- Document Conversation Endpoint ---------
+@app.post("/convert-document", response_model=DocumentConversationResponse)
+def convert_document_to_conversation_endpoint(
+    payload: DocumentConversationRequest,
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Convert a document (txt/pdf) into a conversational format.
+    Steps:
+    1. Load and analyze the document
+    2. Generate summary and detailed analysis
+    3. Convert content into natural conversation
+    """
+    try:
+        result = convert_document_to_conversation(payload.file_path)
+
+        if "error" in result:
+            raise HTTPException(status_code=400, detail=result["error"])
+
+        # Convert conversation list to proper format
+        conversation_messages = [
+            ConversationMessage(speaker=msg["speaker"], message=msg["message"])
+            for msg in result["conversation"]
+        ]
+
+        return DocumentConversationResponse(
+            summary=result["summary"],
+            analysis=result["analysis"],
+            conversation=conversation_messages,
+            document_info=result["document_info"]
+        )
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error processing document: {str(e)}")
