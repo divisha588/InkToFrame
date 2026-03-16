@@ -11,14 +11,31 @@ import {
   Paper,
   Divider,
   Avatar,
+  AppBar,
+  Toolbar,
+  IconButton,
+  Menu,
+  MenuItem,
 } from '@mui/material';
-import { ArrowBack, Person, SmartToy, Description, Analytics } from '@mui/icons-material';
+import {
+  ArrowBack,
+  Person,
+  SmartToy,
+  Description,
+  Analytics,
+  Logout,
+  Chat,
+  CloudUpload
+} from '@mui/icons-material';
 import axios from 'axios';
 
 interface ConversationViewProps {
   token: string;
   conversationId: number;
   onBack: () => void;
+  onViewConversations: () => void;
+  onUploadDocument: () => void;
+  onLogout: () => void;
 }
 
 interface ConversationMessage {
@@ -40,11 +57,23 @@ interface ConversationData {
 const ConversationView: React.FC<ConversationViewProps> = ({
   token,
   conversationId,
-  onBack
+  onBack,
+  onViewConversations,
+  onUploadDocument,
+  onLogout
 }) => {
   const [conversation, setConversation] = useState<ConversationData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+
+  const handleMenu = (event: React.MouseEvent<HTMLElement>) => {
+    setAnchorEl(event.currentTarget);
+  };
+
+  const handleCloseMenu = () => {
+    setAnchorEl(null);
+  };
 
   useEffect(() => {
     fetchConversation();
@@ -112,10 +141,19 @@ const ConversationView: React.FC<ConversationViewProps> = ({
   if (error) {
     return (
       <Box>
-        <Button startIcon={<ArrowBack />} onClick={onBack} sx={{ mb: 2 }}>
-          Back to Conversations
-        </Button>
-        <Alert severity="error">{error}</Alert>
+        <AppBar position="static" elevation={0} sx={{ bgcolor: 'background.paper', color: 'text.primary' }}>
+          <Toolbar>
+            <Button startIcon={<ArrowBack />} onClick={onBack} sx={{ mr: 2 }}>
+              Back
+            </Button>
+            <Typography variant="h6" component="div" sx={{ flexGrow: 1, fontWeight: 600 }}>
+              Conversation Error
+            </Typography>
+          </Toolbar>
+        </AppBar>
+        <Box sx={{ p: 4 }}>
+          <Alert severity="error">{error}</Alert>
+        </Box>
       </Box>
     );
   }
@@ -123,103 +161,177 @@ const ConversationView: React.FC<ConversationViewProps> = ({
   if (!conversation) {
     return (
       <Box>
-        <Button startIcon={<ArrowBack />} onClick={onBack} sx={{ mb: 2 }}>
-          Back to Conversations
-        </Button>
-        <Alert severity="error">Conversation not found</Alert>
+        <AppBar position="static" elevation={0} sx={{ bgcolor: 'background.paper', color: 'text.primary' }}>
+          <Toolbar>
+            <Button startIcon={<ArrowBack />} onClick={onBack} sx={{ mr: 2 }}>
+              Back
+            </Button>
+            <Typography variant="h6" component="div" sx={{ flexGrow: 1, fontWeight: 600 }}>
+              Conversation Not Found
+            </Typography>
+          </Toolbar>
+        </AppBar>
+        <Box sx={{ p: 4 }}>
+          <Alert severity="error">Conversation not found</Alert>
+        </Box>
       </Box>
     );
   }
 
   return (
     <Box>
-      <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
-        <Button startIcon={<ArrowBack />} onClick={onBack} sx={{ mr: 2 }}>
-          Back to Conversations
-        </Button>
-        <Box>
-          <Typography variant="h4" component="h1">
+      {/* Header */}
+      <AppBar position="static" elevation={0} sx={{ bgcolor: 'background.paper', color: 'text.primary' }}>
+        <Toolbar>
+          <Button startIcon={<ArrowBack />} onClick={onBack} sx={{ mr: 2 }}>
+            Back
+          </Button>
+          <Typography variant="h6" component="div" sx={{ flexGrow: 1, fontWeight: 600 }}>
             {conversation.title}
           </Typography>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 1 }}>
-            <Description sx={{ fontSize: 16, color: 'text.secondary' }} />
-            <Typography variant="body2" color="text.secondary">
-              From: {conversation.document_filename}
-            </Typography>
-            <Chip
-              label={conversation.status}
-              color={getStatusColor(conversation.status) as any}
-              size="small"
-            />
-          </Box>
-          <Typography variant="caption" color="text.secondary">
-            Created: {formatDate(conversation.created_at)}
+          <Button
+            variant="outlined"
+            startIcon={<Chat />}
+            onClick={onViewConversations}
+            sx={{ mr: 2 }}
+          >
+            All Conversations
+          </Button>
+          <Button
+            variant="outlined"
+            startIcon={<CloudUpload />}
+            onClick={onUploadDocument}
+            sx={{ mr: 2 }}
+          >
+            Upload Document
+          </Button>
+          <IconButton
+            size="large"
+            aria-label="account of current user"
+            aria-controls="menu-appbar"
+            aria-haspopup="true"
+            onClick={handleMenu}
+            color="inherit"
+          >
+            <Avatar sx={{ width: 32, height: 32, bgcolor: 'primary.main' }}>
+              <Person />
+            </Avatar>
+          </IconButton>
+          <Menu
+            id="menu-appbar"
+            anchorEl={anchorEl}
+            anchorOrigin={{
+              vertical: 'top',
+              horizontal: 'right',
+            }}
+            keepMounted
+            transformOrigin={{
+              vertical: 'top',
+              horizontal: 'right',
+            }}
+            open={Boolean(anchorEl)}
+            onClose={handleCloseMenu}
+          >
+            <MenuItem onClick={onViewConversations}>
+              <Chat sx={{ mr: 1 }} />
+              All Conversations
+            </MenuItem>
+            <MenuItem onClick={onUploadDocument}>
+              <CloudUpload sx={{ mr: 1 }} />
+              Upload Document
+            </MenuItem>
+            <Divider />
+            <MenuItem onClick={onLogout}>
+              <Logout sx={{ mr: 1 }} />
+              Logout
+            </MenuItem>
+          </Menu>
+        </Toolbar>
+      </AppBar>
+
+      <Box sx={{ p: 4 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 3 }}>
+          <Description sx={{ fontSize: 20, color: 'text.secondary' }} />
+          <Typography variant="body1" color="text.secondary">
+            From: {conversation.document_filename}
           </Typography>
+          <Chip
+            label={conversation.status}
+            color={getStatusColor(conversation.status) as any}
+            size="small"
+          />
         </Box>
-      </Box>
+        <Typography variant="caption" color="text.secondary" sx={{ mb: 4, display: 'block' }}>
+          Created: {formatDate(conversation.created_at)}
+        </Typography>
 
-      {/* Summary Section */}
-      <Card sx={{ mb: 3 }}>
-        <CardContent>
-          <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-            <Analytics color="primary" sx={{ mr: 1 }} />
-            <Typography variant="h6">Document Summary</Typography>
-          </Box>
-          <Typography variant="body1">{conversation.summary}</Typography>
-        </CardContent>
-      </Card>
+        {/* Summary Section */}
+        <Card sx={{ mb: 4, borderRadius: 2 }}>
+          <CardContent sx={{ p: 4 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
+              <Analytics color="primary" sx={{ mr: 1, fontSize: 28 }} />
+              <Typography variant="h5">Document Summary</Typography>
+            </Box>
+            <Typography variant="body1" sx={{ fontSize: '1.1rem', lineHeight: 1.6 }}>
+              {conversation.summary}
+            </Typography>
+          </CardContent>
+        </Card>
 
-      {/* Analysis Section */}
-      <Card sx={{ mb: 3 }}>
-        <CardContent>
-          <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-            <Analytics color="secondary" sx={{ mr: 1 }} />
-            <Typography variant="h6">Detailed Analysis</Typography>
-          </Box>
-          <Typography variant="body1" sx={{ whiteSpace: 'pre-line' }}>
-            {conversation.analysis}
-          </Typography>
-        </CardContent>
-      </Card>
+        {/* Analysis Section */}
+        <Card sx={{ mb: 4, borderRadius: 2 }}>
+          <CardContent sx={{ p: 4 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
+              <Analytics color="secondary" sx={{ mr: 1, fontSize: 28 }} />
+              <Typography variant="h5">Detailed Analysis</Typography>
+            </Box>
+            <Typography variant="body1" sx={{ whiteSpace: 'pre-line', fontSize: '1.1rem', lineHeight: 1.6 }}>
+              {conversation.analysis}
+            </Typography>
+          </CardContent>
+        </Card>
 
-      {/* Conversation Section */}
-      <Card>
-        <CardContent>
-          <Typography variant="h6" sx={{ mb: 3 }}>
-            Generated Conversation
-          </Typography>
+        {/* Conversation Section */}
+        <Card sx={{ borderRadius: 2 }}>
+          <CardContent sx={{ p: 4 }}>
+            <Typography variant="h5" sx={{ mb: 4 }}>
+              Generated Conversation
+            </Typography>
 
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-            {conversation.messages.map((message, index) => (
-              <Box key={index}>
-                <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 2 }}>
-                  {getSpeakerAvatar(message.speaker)}
-                  <Box sx={{ flexGrow: 1 }}>
-                    <Typography variant="subtitle2" sx={{ mb: 0.5 }}>
-                      {message.speaker}
-                    </Typography>
-                    <Paper
-                      elevation={1}
-                      sx={{
-                        p: 2,
-                        bgcolor: 'grey.50',
-                        borderRadius: 2,
-                      }}
-                    >
-                      <Typography variant="body1">
-                        {message.message}
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+              {conversation.messages.map((message, index) => (
+                <Box key={index}>
+                  <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 3 }}>
+                    {getSpeakerAvatar(message.speaker)}
+                    <Box sx={{ flexGrow: 1 }}>
+                      <Typography variant="h6" sx={{ mb: 1, color: 'primary.main' }}>
+                        {message.speaker}
                       </Typography>
-                    </Paper>
+                      <Paper
+                        elevation={2}
+                        sx={{
+                          p: 3,
+                          bgcolor: 'grey.50',
+                          borderRadius: 3,
+                          border: '1px solid',
+                          borderColor: 'grey.200',
+                        }}
+                      >
+                        <Typography variant="body1" sx={{ fontSize: '1.05rem', lineHeight: 1.6 }}>
+                          {message.message}
+                        </Typography>
+                      </Paper>
+                    </Box>
                   </Box>
+                  {index < conversation.messages.length - 1 && (
+                    <Divider sx={{ mt: 3, opacity: 0.3 }} />
+                  )}
                 </Box>
-                {index < conversation.messages.length - 1 && (
-                  <Divider sx={{ mt: 2 }} />
-                )}
-              </Box>
-            ))}
-          </Box>
-        </CardContent>
-      </Card>
+              ))}
+            </Box>
+          </CardContent>
+        </Card>
+      </Box>
     </Box>
   );
 };
