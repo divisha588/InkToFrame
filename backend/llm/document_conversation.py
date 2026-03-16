@@ -3,21 +3,32 @@ Document Conversation Converter
 Converts documents into conversational format with summary and analysis.
 """
 
+import os
 from groq import Groq
 from langchain_core.documents import Document
 from typing import List, Dict, Any
 from backend.ingest.ingestion import DocumentLoader
+from backend.config import GROQ_API_KEY
 
 
 class DocumentConversationConverter:
     """Convert documents into conversational format with analysis."""
 
     def __init__(self):
-        try:
-            self.client = Groq()
-            self.api_available = True
-        except Exception as e:
-            print(f"Warning: Groq API not available: {e}")
+        self.loader = DocumentLoader()
+
+        # Initialize Groq client if API key is available
+        if GROQ_API_KEY:
+            try:
+                os.environ["GROQ_API_KEY"] = GROQ_API_KEY
+                self.client = Groq()
+                self.api_available = True
+            except Exception as e:
+                print(f"Warning: Failed to initialize Groq client: {e}")
+                self.client = None
+                self.api_available = False
+        else:
+            print("Warning: GROQ_API_KEY not found in environment variables")
             self.client = None
             self.api_available = False
 

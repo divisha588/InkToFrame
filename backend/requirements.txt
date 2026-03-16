@@ -7,6 +7,11 @@ tiktoken
 sentence-transformers
 markdown
 groq
-fastapi 
+fastapi
 uvicorn
 argon2-cffi
+sqlalchemy
+alembic
+python-multipart
+PyPDF2
+unstructured[pdf]
