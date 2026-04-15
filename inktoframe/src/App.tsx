@@ -1,0 +1,243 @@
+import { motion } from "framer-motion";
+import { Button } from "@/components/ui/button";
+import { useState, useEffect } from "react";
+
+function StepFlow() {
+  const steps = [
+    { title: "Drop anything", desc: "PDFs, docs, notes — messy or long." },
+    { title: "We break it down", desc: "Chunks. Visuals. No walls of text." },
+    { title: "Actually read it", desc: "Less overwhelm. More flow. At your pace." }
+  ];
+
+  const [active, setActive] = useState(0);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setActive((prev) => (prev + 1) % steps.length);
+    }, 2000);
+    return () => clearInterval(interval);
+  }, []);
+
+  return (
+    <div className="flex flex-col items-center gap-10">
+      <div className="flex items-center justify-center gap-6">
+        {steps.map((step, i) => (
+          <div key={i} className="flex items-center gap-6">
+            <motion.div
+              animate={{ scale: active === i ? 1.1 : 0.95, opacity: active === i ? 1 : 0.5 }}
+              className="w-56 h-40 rounded-2xl p-4 flex flex-col justify-end bg-gradient-to-br from-fuchsia-500/70 via-violet-500/70 to-cyan-500/70 shadow-[0_0_30px_rgba(139,92,246,0.4)] transition"
+            >
+              <h3 className="text-lg font-semibold">{step.title}</h3>
+              <p className="text-xs text-white/80">{step.desc}</p>
+            </motion.div>
+
+            {i !== steps.length - 1 && (
+              <motion.div
+                animate={{ opacity: active === i ? 1 : 0.3 }}
+                className="text-2xl"
+              >
+                →
+              </motion.div>
+            )}
+          </div>
+        ))}
+      </div>
+
+      <div className="text-sm text-gray-500">
+        flows automatically — no thinking required
+      </div>
+    </div>
+  );
+}
+
+export default function HomePage() {
+  const [files, setFiles] = useState([]);
+
+  const handleFileChange = (e) => {
+    const selected = Array.from(e.target.files || []);
+    setFiles(selected);
+  };
+
+  return (
+    <div className="min-h-screen bg-gradient-to-b from-[#050505] via-[#0a0a0f] to-[#050505] text-white">
+      {/* Hero Section */}
+      <section className="relative flex flex-col items-center justify-center text-center py-24 px-6 bg-[radial-gradient(circle_at_top,rgba(120,80,255,0.15),transparent_60%)] overflow-hidden">
+        {/* Background Image */}
+        <img
+          src="https://placekitten.com/1200/600"
+          alt="hero visual"
+          className="absolute inset-0 w-full h-full object-cover opacity-20 blur-sm pointer-events-none"
+        />
+
+        <motion.h1
+          initial={{ opacity: 0, y: 40 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8 }}
+          className="relative text-5xl md:text-7xl font-bold mb-6 tracking-tight"
+        >
+          InkToFrame
+        </motion.h1>
+        <p className="relative text-lg md:text-xl max-w-2xl text-gray-400 mb-8">
+          Reading without zoning out? Yeah, this makes it bearable.
+        </p>
+        <div className="flex gap-4 relative">
+          <Button className="text-black bg-white hover:bg-gray-200 px-12 py-7 text-xl md:text-2xl rounded-3xl shadow-2xl w-full max-w-md">
+            Explore
+          </Button>
+        </div>
+      </section>
+
+      
+      {/* Intro Section */}
+      <section className="py-28 px-6 bg-[#07070d] flex justify-center">
+        <div className="max-w-5xl w-full grid md:grid-cols-2 gap-12 items-start">
+          {/* Sticky Heading */}
+          <div className="md:sticky md:top-32 flex flex-col items-start gap-4">
+            <motion.h2
+              animate={{ y: [0, -6, 0] }}
+              transition={{ repeat: Infinity, duration: 4, ease: "easeInOut" }}
+              className="text-3xl md:text-4xl font-semibold"
+            >
+              Built for minds that don't follow linear focus
+            </motion.h2>
+
+            <motion.img
+              src="https://i.imgur.com/3ZQ3Z4H.png"
+              alt="confused manga"
+              initial={{ opacity: 0, scale: 0.8 }}
+              whileInView={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 0.2 }}
+              className="w-64 md:w-80 h-auto object-cover rounded-md border border-white/10 shadow-2xl mt-4"
+            />
+          </div>
+
+          {/* Scrollable Content */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: "-100px" }}
+            transition={{ duration: 0.6 }}
+            className="space-y-4 text-left"
+          >
+            <p className="text-gray-300 text-base md:text-lg leading-relaxed">
+              Can't focus? Lose track mid-read? Same.
+            </p>
+
+            <p className="text-gray-400 text-sm md:text-base leading-relaxed">
+              This breaks docs into lighter, visual bits — so it's easier to actually get through them.
+            </p>
+
+            <p className="text-gray-500 text-sm italic leading-relaxed">
+              Made for distracted brains. No forcing. Just flow.
+            </p>
+          </motion.div>
+        </div>
+      </section>
+
+      {/* Manga Wall Poster Section */}
+      <section className="py-28 px-6 bg-[#080810] flex flex-col items-center">
+        
+        <div className="relative w-full max-w-6xl h-[700px]">
+          {[
+            { src: "https://i.imgur.com/8Km9tLL.jpg", pos: "top-0 left-10 rotate-[-2deg]" },
+            { src: "https://i.imgur.com/2DsA49b.jpg", pos: "top-20 right-20 rotate-[3deg]" },
+            { src: "https://i.imgur.com/Z7AzH2c.jpg", pos: "top-40 left-1/3 rotate-[-1deg]" },
+            { src: "https://i.imgur.com/5tj6S7Ol.jpg", pos: "bottom-10 left-16 rotate-[2deg]" },
+            { src: "https://i.imgur.com/8Km9tLL.jpg", pos: "bottom-0 right-24 rotate-[-3deg]" },
+            { src: "https://i.imgur.com/2DsA49b.jpg", pos: "top-1/2 right-1/3 rotate-[1deg]" },
+            { src: "https://i.imgur.com/Z7AzH2c.jpg", pos: "top-10 left-1/2 -translate-x-1/2 rotate-[2deg]" },
+            { src: "https://i.imgur.com/5tj6S7Ol.jpg", pos: "bottom-24 right-10 rotate-[-2deg]" }
+          ].map((item, i) => (
+            <motion.div
+              key={i}
+              initial={{ opacity: 0, scale: 0.95 }}
+              whileInView={{ opacity: 1, scale: 1 }}
+              transition={{ delay: i * 0.08 }}
+              className={`absolute ${item.pos} w-40 md:w-52 h-64 md:h-72`}
+            >
+              <div className="relative group">
+                {/* tape effect */}
+                <div className="absolute -top-2 left-1/2 -translate-x-1/2 w-10 h-3 bg-white/20 rounded-sm blur-[1px]" />
+
+                <img
+                  src={item.src}
+                  alt="manga poster"
+                  className="w-full h-full object-cover rounded-md border border-white/10 shadow-2xl group-hover:scale-[1.04] transition duration-300"
+                />
+              </div>
+            </motion.div>
+          ))}
+        </div>
+      </section>
+
+      {/* Upload Section */}
+      <section className="py-24 px-6 flex flex-col items-center bg-[radial-gradient(circle_at_center,rgba(80,120,255,0.12),transparent_70%)]">
+        <h2 className="text-4xl font-bold mb-6">Upload Your Documents</h2>
+        <p className="text-gray-400 mb-8 text-center max-w-xl">
+          Upload files such as PDF, DOCX, or other document formats to integrate
+          them into your workflow.
+        </p>
+
+        <div className="w-full max-w-xl border-2 border-dashed border-white/20 rounded-2xl p-8 text-center hover:border-white/40 transition bg-white/5">
+          <input
+            type="file"
+            multiple
+            accept=".pdf,.doc,.docx,.txt,.md,.ppt,.pptx,.xls,.xlsx"
+            onChange={handleFileChange}
+            className="hidden"
+            id="fileUpload"
+          />
+          <label htmlFor="fileUpload" className="cursor-pointer">
+            <p className="text-lg mb-2">Drag & drop files or click to upload</p>
+            <p className="text-sm text-gray-500">
+              Supported: PDF, DOCX, TXT, PPT, XLS
+            </p>
+          </label>
+        </div>
+
+        {files.length > 0 && (
+          <div className="mt-8 w-full max-w-xl">
+            <h3 className="text-xl font-semibold mb-4">Uploaded Files</h3>
+            <ul className="space-y-2">
+              {files.map((file, index) => (
+                <li
+                  key={index}
+                  className="bg-white/5 p-3 rounded-lg text-sm flex justify-between border border-white/10"
+                >
+                  <span>{file.name}</span>
+                  <span className="text-gray-400">
+                    {(file.size / 1024).toFixed(1)} KB
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+      </section>
+
+      {/* Showcase Section */}
+      <section className="py-20 px-6 text-center bg-[#07070d]">
+        <h2 className="text-4xl font-bold mb-12">lowkey the flow</h2>
+
+        {/* Animated Step Progression */}
+        <StepFlow />
+      </section>
+
+      {/* CTA Section */}
+      <section className="py-24 text-center bg-[radial-gradient(circle_at_bottom,rgba(180,120,255,0.15),transparent_70%)]">
+        <h2 className="text-3xl font-bold mb-4">
+          Become part of the story
+        </h2>
+        <p className="text-gray-400 mb-6">
+          Mint your identity and shape the future of the KPRverse.
+        </p>
+        <Button className="bg-white text-black hover:bg-gray-200">Get Started</Button>
+      </section>
+
+      {/* Footer */}
+      <footer className="border-t border-white/10 py-6 text-center text-gray-500 bg-[#050505]">
+        © 2026 KPRverse. All rights reserved.
+      </footer>
+    </div>
+  );
+}
