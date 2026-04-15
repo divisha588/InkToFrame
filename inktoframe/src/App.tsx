@@ -112,7 +112,7 @@ export default function HomePage() {
             </motion.h2>
 
             <motion.img
-              src="https://i.imgur.com/3ZQ3Z4H.png"
+              src="/anime3.jpg"
               alt="confused manga"
               initial={{ opacity: 0, scale: 0.8 }}
               whileInView={{ opacity: 1, scale: 1 }}
@@ -149,14 +149,14 @@ export default function HomePage() {
         
         <div className="relative w-full max-w-6xl h-[700px]">
           {[
-            { src: "https://i.imgur.com/8Km9tLL.jpg", pos: "top-0 left-10 rotate-[-2deg]" },
-            { src: "https://i.imgur.com/2DsA49b.jpg", pos: "top-20 right-20 rotate-[3deg]" },
-            { src: "https://i.imgur.com/Z7AzH2c.jpg", pos: "top-40 left-1/3 rotate-[-1deg]" },
-            { src: "https://i.imgur.com/5tj6S7Ol.jpg", pos: "bottom-10 left-16 rotate-[2deg]" },
-            { src: "https://i.imgur.com/8Km9tLL.jpg", pos: "bottom-0 right-24 rotate-[-3deg]" },
-            { src: "https://i.imgur.com/2DsA49b.jpg", pos: "top-1/2 right-1/3 rotate-[1deg]" },
-            { src: "https://i.imgur.com/Z7AzH2c.jpg", pos: "top-10 left-1/2 -translate-x-1/2 rotate-[2deg]" },
-            { src: "https://i.imgur.com/5tj6S7Ol.jpg", pos: "bottom-24 right-10 rotate-[-2deg]" }
+            { src: "/anime1.jpg", pos: "top-0 left-10 rotate-[-2deg]" },
+            { src: "/anime3.jpg", pos: "top-20 right-20 rotate-[3deg]" },
+            { src: "/anime4.jpg", pos: "top-40 left-1/3 rotate-[-1deg]" },
+            { src: "/anime5.jpg", pos: "bottom-10 left-16 rotate-[2deg]" },
+            { src: "/anime2.jpg", pos: "bottom-0 right-24 rotate-[-3deg]" },
+            { src: "/anime6.jpg", pos: "top-1/2 right-1/3 rotate-[1deg]" },
+            { src: "/anime7.jpg", pos: "top-10 left-1/2 -translate-x-1/2 rotate-[2deg]" },
+            { src: "/anime8.jpg", pos: "bottom-24 right-10 rotate-[-2deg]" }
           ].map((item, i) => (
             <motion.div
               key={i}
