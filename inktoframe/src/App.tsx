@@ -61,7 +61,7 @@ export default function HomePage() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#050505] via-[#0a0a0f] to-[#050505] text-white">
       {/* Hero Section */}
-      <section className="relative flex flex-col items-center justify-center text-center py-24 px-6 bg-[radial-gradient(circle_at_top,rgba(120,80,255,0.15),transparent_60%)] overflow-hidden">
+      <section className="relative flex flex-col items-center justify-end text-center min-h-screen px-6 bg-[radial-gradient(circle_at_top,rgba(120,80,255,0.15),transparent_60%)] overflow-hidden pb-32">
         {/* Background Image */}
         <img
           src="https://placekitten.com/1200/600"
@@ -69,18 +69,28 @@ export default function HomePage() {
           className="absolute inset-0 w-full h-full object-cover opacity-20 blur-sm pointer-events-none"
         />
 
-        <motion.h1
-          initial={{ opacity: 0, y: 40 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8 }}
-          className="relative text-5xl md:text-7xl font-bold mb-6 tracking-tight"
-        >
-          InkToFrame
-        </motion.h1>
-        <p className="relative text-lg md:text-xl max-w-2xl text-gray-400 mb-8">
+        <div className="relative flex items-center justify-center gap-8 mb-6 z-10">
+          <motion.img
+            src="/Logo.png"
+            alt="InkToFrame logo"
+            initial={{ opacity: 0, x: -40 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.8 }}
+            className="h-32 md:h-48 w-32 md:w-48 object-cover rounded-full"
+          />
+          <motion.h1
+            initial={{ opacity: 0, y: 40 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8 }}
+            className="text-5xl md:text-7xl font-bold tracking-tight"
+          >
+            InkToFrame
+          </motion.h1>
+        </div>
+        <p className="relative text-lg md:text-xl max-w-2xl text-gray-400 mb-8 z-10">
           Reading without zoning out? Yeah, this makes it bearable.
         </p>
-        <div className="flex gap-4 relative">
+        <div className="flex gap-4 relative z-10 mb-20">
           <Button className="text-black bg-white hover:bg-gray-200 px-12 py-7 text-xl md:text-2xl rounded-3xl shadow-2xl w-full max-w-md">
             Explore
           </Button>
