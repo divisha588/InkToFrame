@@ -40,9 +40,9 @@ def init_database():
 
         print("\n🔧 Database Configuration:")
         print(f"  • Database URL: {os.getenv('DATABASE_URL', 'sqlite:///./dev.db')}")
-        print("  • Upload directory: ./uploads"
-        print("  • Documents directory: ./docs"
-        print("  • Vector store: ./vector_store"
+        print("  • Upload directory: ./uploads")
+        print("  • Documents directory: ./docs")
+        print("  • Vector store: ./vector_store")
 
         print("\n✅ Database is ready for production use!")
 
