@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>InkToFrame</title>
+  <link rel="stylesheet" href="/static/styles.css" />
+</head>
+<body>
+  <header class="topbar">
+    <h1>InkToFrame</h1>
+    <button id="loginIcon" class="icon-button">🔐 Login / Signup</button>
+  </header>
+
+  <main class="container">
+    <section class="card">
+      <h2>Homepage</h2>
+      <p>Upload a document and convert it using our model.</p>
+
+      <div class="actions">
+        <label for="fileInput" class="icon-button upload">📄 Upload Doc</label>
+        <input id="fileInput" type="file" accept=".txt,.md,.markdown,.pdf" hidden />
+        <button id="convertBtn" class="primary">Convert Document</button>
+      </div>
+
+      <p class="hint">Guest users can convert one document. More usage requires login.</p>
+    </section>
+
+    <section class="card output">
+      <h3>Converted Output</h3>
+      <pre id="outputText">No conversion yet.</pre>
+    </section>
+  </main>
+
+  <script src="/static/main.js"></script>
+</body>
+</html>
