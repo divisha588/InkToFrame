@@ -16,14 +16,19 @@ import {
   Menu,
   MenuItem,
   Divider,
+  Stack,
+  Container,
+  Empty,
 } from '@mui/material';
 import {
   ArrowBack,
-  Chat,
+  History,
   Description,
-  Logout,
+  LogoutRounded,
   Person,
-  CloudUpload
+  CloudUpload,
+  AccessTime,
+  CheckCircle,
 } from '@mui/icons-material';
 import axios from 'axios';
 
@@ -48,6 +53,222 @@ const ConversationList: React.FC<ConversationListProps> = ({
   onBack,
   onLogout
 }) => {
+  const [conversations, setConversations] = useState<Conversation[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+
+  useEffect(() => {
+    fetchConversations();
+  }, []);
+
+  const fetchConversations = async () => {
+    try {
+      const response = await axios.get('http://localhost:8000/conversations', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+      setConversations(response.data);
+      setError('');
+    } catch (err: any) {
+      setError(err.response?.data?.detail || 'Failed to load conversations');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleMenu = (event: React.MouseEvent<HTMLElement>) => {
+    setAnchorEl(event.currentTarget);
+  };
+
+  const handleCloseMenu = () => {
+    setAnchorEl(null);
+  };
+
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+  };
+
+  const getStatusColor = (status: string): 'default' | 'primary' | 'secondary' | 'error' | 'info' | 'success' | 'warning' => {
+    switch (status) {
+      case 'completed':
+        return 'success';
+      case 'processing':
+        return 'info';
+      case 'failed':
+        return 'error';
+      default:
+        return 'default';
+    }
+  };
+
+  return (
+    <Box sx={{ minHeight: '100vh', bgcolor: 'background.default' }}>
+      {/* Top Navigation Bar */}
+      <AppBar position="sticky" elevation={1} sx={{ bgcolor: 'white', borderBottom: '1px solid rgba(0,0,0,0.08)' }}>
+        <Toolbar>
+          <History sx={{ mr: 1, color: 'primary.main', fontSize: 28 }} />
+          <Typography variant="h6" sx={{ flex: 1, fontWeight: 700, color: 'primary.main' }}>
+            Conversion History
+          </Typography>
+
+          <Stack direction="row" spacing={1}>
+            <Button
+              startIcon={<CloudUpload />}
+              onClick={onBack}
+              sx={{ color: 'text.primary', textTransform: 'none' }}
+            >
+              Upload New
+            </Button>
+
+            <IconButton onClick={handleMenu} size="small">
+              <Avatar sx={{ width: 32, height: 32, bgcolor: 'primary.main' }}>
+                <Person sx={{ fontSize: 16 }} />
+              </Avatar>
+            </IconButton>
+            <Menu
+              anchorEl={anchorEl}
+              open={Boolean(anchorEl)}
+              onClose={handleCloseMenu}
+              anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+              transformOrigin={{ vertical: 'top', horizontal: 'right' }}
+            >
+              <MenuItem>
+                <Person sx={{ mr: 1 }} />
+                Profile
+              </MenuItem>
+              <Divider />
+              <MenuItem
+                onClick={() => {
+                  handleCloseMenu();
+                  onLogout();
+                }}
+              >
+                <LogoutRounded sx={{ mr: 1, color: 'error.main' }} />
+                <span style={{ color: '#d32f2f' }}>Logout</span>
+              </MenuItem>
+            </Menu>
+          </Stack>
+        </Toolbar>
+      </AppBar>
+
+      <Container maxWidth="lg" sx={{ py: 4 }}>
+        <Box sx={{ mb: 4 }}>
+          <Button
+            startIcon={<ArrowBack />}
+            onClick={onBack}
+            sx={{ mb: 2 }}
+          >
+            Back to Upload
+          </Button>
+
+          <Typography variant="h4" gutterBottom sx={{ fontWeight: 700 }}>
+            Your Conversation History
+          </Typography>
+          <Typography variant="body1" color="textSecondary">
+            View and manage all your document conversions
+          </Typography>
+        </Box>
+
+        {error && (
+          <Alert severity="error" sx={{ mb: 3 }}>
+            {error}
+          </Alert>
+        )}
+
+        {loading ? (
+          <Box sx={{ display: 'flex', justifyContent: 'center', py: 6 }}>
+            <CircularProgress />
+          </Box>
+        ) : conversations.length === 0 ? (
+          <Card elevation={2}>
+            <CardContent sx={{ textAlign: 'center', py: 6 }}>
+              <History sx={{ fontSize: 64, color: 'text.secondary', mb: 2 }} />
+              <Typography variant="h6" gutterBottom>
+                No Conversations Yet
+              </Typography>
+              <Typography variant="body1" color="textSecondary" sx={{ mb: 3 }}>
+                Start by uploading a document to create your first conversation
+              </Typography>
+              <Button
+                variant="contained"
+                startIcon={<CloudUpload />}
+                onClick={onBack}
+              >
+                Upload Document
+              </Button>
+            </CardContent>
+          </Card>
+        ) : (
+          <Grid container spacing={2}>
+            {conversations.map((conversation) => (
+              <Grid item xs={12} md={6} lg={4} key={conversation.id}>
+                <Card
+                  sx={{
+                    height: '100%',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    cursor: 'pointer',
+                    transition: 'all 0.3s',
+                    '&:hover': {
+                      boxShadow: 3,
+                      transform: 'translateY(-4px)',
+                    },
+                  }}
+                  onClick={() => onViewConversation(conversation.id)}
+                >
+                  <CardContent sx={{ flexGrow: 1 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'start', justifyContent: 'space-between', mb: 2 }}>
+                      <Description sx={{ color: 'primary.main', fontSize: 32 }} />
+                      <Chip
+                        label={conversation.status}
+                        color={getStatusColor(conversation.status)}
+                        size="small"
+                        icon={conversation.status === 'completed' ? <CheckCircle /> : <AccessTime />}
+                      />
+                    </Box>
+
+                    <Typography variant="h6" gutterBottom sx={{ fontWeight: 700, mb: 1 }}>
+                      {conversation.title}
+                    </Typography>
+
+                    <Typography variant="body2" color="textSecondary" sx={{ mb: 2 }}>
+                      📄 {conversation.document_filename}
+                    </Typography>
+
+                    <Typography variant="caption" color="textSecondary" sx={{ display: 'block', mb: 2 }}>
+                      🕐 {formatDate(conversation.created_at)}
+                    </Typography>
+                  </CardContent>
+
+                  <Divider />
+                  <Box sx={{ p: 2, textAlign: 'right' }}>
+                    <Button
+                      size="small"
+                      endIcon={<ArrowBack sx={{ transform: 'rotate(180deg)' }} />}
+                    >
+                      View Details
+                    </Button>
+                  </Box>
+                </Card>
+              </Grid>
+            ))}
+          </Grid>
+        )}
+      </Container>
+    </Box>
+  );
+};
+
+export default ConversationList;
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');

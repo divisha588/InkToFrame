@@ -16,16 +16,20 @@ import {
   IconButton,
   Menu,
   MenuItem,
+  Container,
+  Grid,
+  Stack,
 } from '@mui/material';
 import {
   ArrowBack,
   Person,
-  SmartToy,
   Description,
-  Analytics,
-  Logout,
-  Chat,
-  CloudUpload
+  LogoutRounded,
+  History,
+  CloudUpload,
+  CheckCircle,
+  GetApp,
+  Info,
 } from '@mui/icons-material';
 import axios from 'axios';
 
@@ -97,6 +101,281 @@ const ConversationView: React.FC<ConversationViewProps> = ({
       setLoading(false);
     }
   };
+
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+  };
+
+  const handleDownload = () => {
+    if (!conversation) return;
+
+    const content = `
+Document Conversation Report
+=============================
+
+Title: ${conversation.title}
+Document: ${conversation.document_filename}
+Generated: ${formatDate(conversation.created_at)}
+Status: ${conversation.status}
+
+SUMMARY
+-------
+${conversation.summary}
+
+ANALYSIS
+--------
+${conversation.analysis}
+
+CONVERSATION
+------------
+${conversation.messages?.map((msg) => `${msg.speaker}: ${msg.message}`).join('\n\n')}
+    `;
+
+    const blob = new Blob([content], { type: 'text/plain' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `conversation-${conversationId}.txt`;
+    document.body.appendChild(a);
+    a.click();
+    window.URL.revokeObjectURL(url);
+    document.body.removeChild(a);
+  };
+
+  return (
+    <Box sx={{ minHeight: '100vh', bgcolor: 'background.default' }}>
+      {/* Top Navigation Bar */}
+      <AppBar position="sticky" elevation={1} sx={{ bgcolor: 'white', borderBottom: '1px solid rgba(0,0,0,0.08)' }}>
+        <Toolbar>
+          <Description sx={{ mr: 1, color: 'primary.main', fontSize: 28 }} />
+          <Typography variant="h6" sx={{ flex: 1, fontWeight: 700, color: 'primary.main' }}>
+            Conversation Details
+          </Typography>
+
+          <Stack direction="row" spacing={1}>
+            <Button
+              startIcon={<History />}
+              onClick={onViewConversations}
+              sx={{ color: 'text.primary', textTransform: 'none' }}
+            >
+              Back to History
+            </Button>
+
+            <IconButton onClick={handleMenu} size="small">
+              <Avatar sx={{ width: 32, height: 32, bgcolor: 'primary.main' }}>
+                <Person sx={{ fontSize: 16 }} />
+              </Avatar>
+            </IconButton>
+            <Menu
+              anchorEl={anchorEl}
+              open={Boolean(anchorEl)}
+              onClose={handleCloseMenu}
+              anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+              transformOrigin={{ vertical: 'top', horizontal: 'right' }}
+            >
+              <MenuItem>
+                <Person sx={{ mr: 1 }} />
+                Profile
+              </MenuItem>
+              <Divider />
+              <MenuItem
+                onClick={() => {
+                  handleCloseMenu();
+                  onLogout();
+                }}
+              >
+                <LogoutRounded sx={{ mr: 1, color: 'error.main' }} />
+                <span style={{ color: '#d32f2f' }}>Logout</span>
+              </MenuItem>
+            </Menu>
+          </Stack>
+        </Toolbar>
+      </AppBar>
+
+      <Container maxWidth="lg" sx={{ py: 4 }}>
+        {loading ? (
+          <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}>
+            <CircularProgress />
+          </Box>
+        ) : error ? (
+          <Alert severity="error" sx={{ mb: 3 }}>
+            {error}
+          </Alert>
+        ) : conversation ? (
+          <Grid container spacing={3}>
+            {/* Back and Action Buttons */}
+            <Grid item xs={12}>
+              <Stack direction="row" spacing={2} sx={{ mb: 2 }}>
+                <Button
+                  startIcon={<ArrowBack />}
+                  onClick={onViewConversations}
+                >
+                  Back to History
+                </Button>
+                <Button
+                  variant="contained"
+                  startIcon={<CloudUpload />}
+                  onClick={onUploadDocument}
+                >
+                  Upload New Document
+                </Button>
+                <Box sx={{ flex: 1 }} />
+                <Button
+                  variant="outlined"
+                  startIcon={<GetApp />}
+                  onClick={handleDownload}
+                >
+                  Download Report
+                </Button>
+              </Stack>
+            </Grid>
+
+            {/* Header Info */}
+            <Grid item xs={12}>
+              <Card elevation={2}>
+                <CardContent>
+                  <Stack direction="row" spacing={2} alignItems="center" sx={{ mb: 2 }}>
+                    <Description sx={{ fontSize: 40, color: 'primary.main' }} />
+                    <Box sx={{ flex: 1 }}>
+                      <Typography variant="h5" sx={{ fontWeight: 700 }}>
+                        {conversation.title}
+                      </Typography>
+                      <Typography variant="body2" color="textSecondary">
+                        📄 {conversation.document_filename}
+                      </Typography>
+                    </Box>
+                    <Chip
+                      label={conversation.status}
+                      color={conversation.status === 'completed' ? 'success' : 'info'}
+                      icon={<CheckCircle />}
+                    />
+                  </Stack>
+                  <Divider sx={{ my: 2 }} />
+                  <Typography variant="caption" color="textSecondary">
+                    🕐 Generated on {formatDate(conversation.created_at)}
+                  </Typography>
+                </CardContent>
+              </Card>
+            </Grid>
+
+            {/* Summary */}
+            <Grid item xs={12} md={6}>
+              <Card elevation={2}>
+                <CardContent>
+                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                    <Typography variant="h6" sx={{ flex: 1, fontWeight: 700 }}>
+                      📝 Summary
+                    </Typography>
+                    <CheckCircle sx={{ color: 'success.main' }} />
+                  </Box>
+                  <Divider sx={{ mb: 2 }} />
+                  <Typography variant="body2" color="textSecondary" sx={{ whiteSpace: 'pre-wrap', lineHeight: 1.6 }}>
+                    {conversation.summary}
+                  </Typography>
+                </CardContent>
+              </Card>
+            </Grid>
+
+            {/* Analysis */}
+            <Grid item xs={12} md={6}>
+              <Card elevation={2}>
+                <CardContent>
+                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                    <Typography variant="h6" sx={{ flex: 1, fontWeight: 700 }}>
+                      🔍 Analysis
+                    </Typography>
+                    <CheckCircle sx={{ color: 'success.main' }} />
+                  </Box>
+                  <Divider sx={{ mb: 2 }} />
+                  <Typography variant="body2" color="textSecondary" sx={{ whiteSpace: 'pre-wrap', lineHeight: 1.6 }}>
+                    {conversation.analysis}
+                  </Typography>
+                </CardContent>
+              </Card>
+            </Grid>
+
+            {/* Conversation */}
+            <Grid item xs={12}>
+              <Card elevation={2}>
+                <CardContent>
+                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                    <Typography variant="h6" sx={{ flex: 1, fontWeight: 700 }}>
+                      💬 AI-Generated Conversation
+                    </Typography>
+                    <CheckCircle sx={{ color: 'success.main' }} />
+                  </Box>
+                  <Divider sx={{ mb: 2 }} />
+
+                  <Box sx={{ maxHeight: '600px', overflowY: 'auto' }}>
+                    {conversation.messages && conversation.messages.length > 0 ? (
+                      <Stack spacing={2}>
+                        {conversation.messages.map((msg, index) => (
+                          <Paper
+                            key={index}
+                            sx={{
+                              p: 2,
+                              bgcolor: msg.speaker === 'AI' ? 'primary.light' : 'grey.100',
+                              color: msg.speaker === 'AI' ? 'white' : 'text.primary',
+                              borderLeft: '4px solid',
+                              borderLeftColor: msg.speaker === 'AI' ? 'primary.main' : 'grey.400',
+                            }}
+                          >
+                            <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1 }}>
+                              {msg.speaker}
+                            </Typography>
+                            <Typography variant="body2">
+                              {msg.message}
+                            </Typography>
+                          </Paper>
+                        ))}
+                      </Stack>
+                    ) : (
+                      <Typography color="textSecondary" sx={{ textAlign: 'center', py: 4 }}>
+                        No conversation data available
+                      </Typography>
+                    )}
+                  </Box>
+                </CardContent>
+              </Card>
+            </Grid>
+
+            {/* Info Card */}
+            <Grid item xs={12}>
+              <Paper sx={{ p: 2, bgcolor: 'info.lighter', borderRadius: 2 }}>
+                <Box sx={{ display: 'flex', gap: 2 }}>
+                  <Info sx={{ color: 'info.main', flexShrink: 0 }} />
+                  <Box>
+                    <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1 }}>
+                      About This Report
+                    </Typography>
+                    <Typography variant="caption" component="div" color="textSecondary" sx={{ mb: 0.5 }}>
+                      • This conversation was generated by advanced AI technology
+                    </Typography>
+                    <Typography variant="caption" component="div" color="textSecondary" sx={{ mb: 0.5 }}>
+                      • All conversations are stored securely in your account
+                    </Typography>
+                    <Typography variant="caption" component="div" color="textSecondary">
+                      • You can download, share, or delete this conversation anytime
+                    </Typography>
+                  </Box>
+                </Box>
+              </Paper>
+            </Grid>
+          </Grid>
+        ) : null}
+      </Container>
+    </Box>
+  );
+};
+
+export default ConversationView;
 
   const getStatusColor = (status: string) => {
     switch (status) {

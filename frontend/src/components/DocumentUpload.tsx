@@ -1,18 +1,13 @@
 import React, { useState, useCallback } from 'react';
 import {
-  Paper,
-  Typography,
   Box,
   Button,
-  LinearProgress,
-  Alert,
   Card,
   CardContent,
-  Chip,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
+  Typography,
+  LinearProgress,
+  Alert,
+  CircularProgress,
   AppBar,
   Toolbar,
   IconButton,
@@ -20,15 +15,20 @@ import {
   Menu,
   MenuItem,
   Divider,
+  Paper,
+  Grid,
+  Stack,
+  Chip,
 } from '@mui/material';
 import {
   CloudUpload,
-  Description,
-  CheckCircle,
-  Logout,
+  LogoutRounded,
   Person,
-  Chat,
-  ArrowBack
+  History,
+  GetApp,
+  Close,
+  Check,
+  Info,
 } from '@mui/icons-material';
 import axios from 'axios';
 
@@ -38,19 +38,31 @@ interface DocumentUploadProps {
   onLogout: () => void;
 }
 
+interface ConversationResult {
+  summary: string;
+  analysis: string;
+  conversation: Array<{
+    speaker: string;
+    message: string;
+  }>;
+  document_info: {
+    filename: string;
+    file_type: string;
+    file_size: number;
+  };
+}
+
 const DocumentUpload: React.FC<DocumentUploadProps> = ({
   token,
   onViewConversations,
-  onLogout
+  onLogout,
 }) => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
-  const [uploadProgress, setUploadProgress] = useState(0);
-  const [uploadResult, setUploadResult] = useState<any>(null);
   const [processing, setProcessing] = useState(false);
+  const [result, setResult] = useState<ConversationResult | null>(null);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
-  const [showProcessDialog, setShowProcessDialog] = useState(false);
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
 
   const handleMenu = (event: React.MouseEvent<HTMLElement>) => {
@@ -64,71 +76,77 @@ const DocumentUpload: React.FC<DocumentUploadProps> = ({
   const handleFileSelect = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
-      // Validate file type
       const allowedTypes = ['text/plain', 'application/pdf'];
       if (!allowedTypes.includes(file.type)) {
         setError('Please select a TXT or PDF file.');
         return;
       }
 
-      // Validate file size (10MB limit)
-      if (file.size > 10 * 1024 * 1024) {
-        setError('File size must be less than 10MB.');
+      if (file.size > 50 * 1024 * 1024) {
+        setError('File size must be less than 50MB.');
         return;
       }
 
       setSelectedFile(file);
       setError('');
       setSuccess('');
-      setUploadResult(null);
+      setResult(null);
     }
   }, []);
 
-  const handleUpload = async () => {
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+  };
+
+  const handleDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const file = e.dataTransfer.files?.[0];
+    if (file) {
+      const input = document.createElement('input');
+      input.type = 'file';
+      Object.defineProperty(input, 'files', {
+        value: e.dataTransfer.files,
+      });
+      handleFileSelect({ target: input } as any);
+    }
+  }, [handleFileSelect]);
+
+  const handleConvertDocument = async () => {
     if (!selectedFile) return;
 
     setUploading(true);
-    setUploadProgress(0);
     setError('');
+    setSuccess('');
 
     try {
+      // Step 1: Upload document
       const formData = new FormData();
       formData.append('file', selectedFile);
 
-      const response = await axios.post('http://localhost:8000/upload-document', formData, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'multipart/form-data',
-        },
-        onUploadProgress: (progressEvent) => {
-          const percentCompleted = Math.round(
-            (progressEvent.loaded * 100) / (progressEvent.total || selectedFile.size)
-          );
-          setUploadProgress(percentCompleted);
-        },
-      });
+      const uploadResponse = await axios.post(
+        'http://localhost:8000/upload-document',
+        formData,
+        {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'multipart/form-data',
+          },
+        }
+      );
 
-      setUploadResult(response.data);
-      setSuccess('File uploaded successfully!');
-      setShowProcessDialog(true);
-    } catch (err: any) {
-      setError(err.response?.data?.detail || 'Upload failed');
-    } finally {
+      setSuccess(`Document uploaded successfully! Processing...`);
+
+      // Step 2: Convert document to conversation
+      setProcessing(true);
       setUploading(false);
-      setUploadProgress(0);
-    }
-  };
 
-  const handleProcessDocument = async () => {
-    if (!uploadResult) return;
+      const filePath = `uploads/${uploadResponse.data.filename}`;
 
-    setProcessing(true);
-    setError('');
-
-    try {
-      await axios.post(
-        `http://localhost:8000/process-document/${uploadResult.document_id}`,
-        {},
+      const conversionResponse = await axios.post(
+        'http://localhost:8000/convert-document',
+        { file_path: filePath },
         {
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -136,265 +154,432 @@ const DocumentUpload: React.FC<DocumentUploadProps> = ({
         }
       );
 
-      setSuccess('Document processed successfully! View your conversations to see the result.');
-      setShowProcessDialog(false);
+      setResult(conversionResponse.data);
+      setSuccess('Document converted successfully! 🎉');
       setSelectedFile(null);
-      setUploadResult(null);
     } catch (err: any) {
-      setError(err.response?.data?.detail || 'Processing failed');
+      const errorMessage = err.response?.data?.detail || 'An error occurred during processing';
+      setError(errorMessage);
     } finally {
+      setUploading(false);
       setProcessing(false);
     }
   };
 
+  const handleReset = () => {
+    setSelectedFile(null);
+    setResult(null);
+    setError('');
+    setSuccess('');
+  };
+
+  const getFileSize = (bytes: number) => {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+  };
+
   return (
-    <Box>
-      {/* Header */}
-      <AppBar position="static" elevation={0} sx={{ bgcolor: 'background.paper', color: 'text.primary' }}>
+    <Box sx={{ minHeight: '100vh', bgcolor: 'background.default' }}>
+      {/* Top Navigation Bar */}
+      <AppBar position="sticky" elevation={1} sx={{ bgcolor: 'white', borderBottom: '1px solid rgba(0,0,0,0.08)' }}>
         <Toolbar>
-          <Typography variant="h6" component="div" sx={{ flexGrow: 1, fontWeight: 600 }}>
-            Document Conversation Converter
+          <CloudUpload sx={{ mr: 1, color: 'primary.main', fontSize: 28 }} />
+          <Typography variant="h6" sx={{ flex: 1, fontWeight: 700, color: 'primary.main' }}>
+            InkToFrame
           </Typography>
-          <Button
-            variant="outlined"
-            startIcon={<Chat />}
-            onClick={onViewConversations}
-            sx={{ mr: 2 }}
-          >
-            My Conversations
-          </Button>
-          <IconButton
-            size="large"
-            aria-label="account of current user"
-            aria-controls="menu-appbar"
-            aria-haspopup="true"
-            onClick={handleMenu}
-            color="inherit"
-          >
-            <Avatar sx={{ width: 32, height: 32, bgcolor: 'primary.main' }}>
-              <Person />
-            </Avatar>
-          </IconButton>
-          <Menu
-            id="menu-appbar"
-            anchorEl={anchorEl}
-            anchorOrigin={{
-              vertical: 'top',
-              horizontal: 'right',
-            }}
-            keepMounted
-            transformOrigin={{
-              vertical: 'top',
-              horizontal: 'right',
-            }}
-            open={Boolean(anchorEl)}
-            onClose={handleCloseMenu}
-          >
-            <MenuItem onClick={onViewConversations}>
-              <Chat sx={{ mr: 1 }} />
-              My Conversations
-            </MenuItem>
-            <Divider />
-            <MenuItem onClick={onLogout}>
-              <Logout sx={{ mr: 1 }} />
-              Logout
-            </MenuItem>
-          </Menu>
+
+          <Stack direction="row" spacing={1}>
+            <Button
+              startIcon={<History />}
+              onClick={() => {
+                handleCloseMenu();
+                onViewConversations();
+              }}
+              sx={{ color: 'text.primary', textTransform: 'none' }}
+            >
+              History
+            </Button>
+
+            <IconButton onClick={handleMenu} size="small">
+              <Avatar sx={{ width: 32, height: 32, bgcolor: 'primary.main' }}>
+                <Person sx={{ fontSize: 16 }} />
+              </Avatar>
+            </IconButton>
+            <Menu
+              anchorEl={anchorEl}
+              open={Boolean(anchorEl)}
+              onClose={handleCloseMenu}
+              anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+              transformOrigin={{ vertical: 'top', horizontal: 'right' }}
+            >
+              <MenuItem>
+                <Person sx={{ mr: 1 }} />
+                Profile
+              </MenuItem>
+              <Divider />
+              <MenuItem
+                onClick={() => {
+                  handleCloseMenu();
+                  onLogout();
+                }}
+              >
+                <LogoutRounded sx={{ mr: 1, color: 'error.main' }} />
+                <span style={{ color: '#d32f2f' }}>Logout</span>
+              </MenuItem>
+            </Menu>
+          </Stack>
         </Toolbar>
       </AppBar>
 
-      <Box sx={{ p: 4 }}>
-        <Typography variant="h4" component="h1" gutterBottom sx={{ textAlign: 'center', mb: 2 }}>
-          Upload Your Document
-        </Typography>
-        <Typography
-          variant="h6"
-          color="text.secondary"
-          sx={{ textAlign: 'center', mb: 6, maxWidth: 600, mx: 'auto' }}
-        >
-          Transform any PDF or TXT file into an engaging conversation.
-          Our AI will analyze your document and create a natural dialogue.
-        </Typography>
+      <Box sx={{ py: 4 }}>
+        {result ? (
+          // Show Result View
+          <Grid container spacing={3} sx={{ px: { xs: 2, md: 4 } }}>
+            <Grid item xs={12}>
+              <Button
+                startIcon={<Close />}
+                onClick={handleReset}
+                sx={{ mb: 2 }}
+              >
+                Upload Another Document
+              </Button>
+            </Grid>
 
-        <Box sx={{ maxWidth: 800, mx: 'auto' }}>
-          <Paper
-            elevation={3}
-            sx={{
-              p: 4,
-              mb: 4,
-              border: '2px dashed',
-              borderColor: selectedFile ? 'primary.main' : 'grey.300',
-              bgcolor: selectedFile ? 'primary.50' : 'background.paper',
-              transition: 'all 0.3s ease',
-            }}
-          >
-            <Box sx={{ textAlign: 'center', mb: 3 }}>
-              <CloudUpload
-                sx={{
-                  fontSize: 64,
-                  color: selectedFile ? 'primary.main' : 'grey.400',
-                  mb: 2
-                }}
-              />
-              <Typography variant="h5" gutterBottom>
-                {selectedFile ? 'File Selected' : 'Choose Your Document'}
-              </Typography>
-              <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
-                {selectedFile
-                  ? 'Ready to upload and process'
-                  : 'Drag & drop a PDF or TXT file here, or click to browse'
-                }
-              </Typography>
-            </Box>
+            {/* Document Info */}
+            <Grid item xs={12} md={4}>
+              <Card elevation={2}>
+                <CardContent>
+                  <Typography color="textSecondary" gutterBottom>
+                    📄 Document Information
+                  </Typography>
+                  <Divider sx={{ my: 2 }} />
+                  <Stack spacing={2}>
+                    <Box>
+                      <Typography variant="caption" color="textSecondary">
+                        Filename
+                      </Typography>
+                      <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                        {result.document_info.filename}
+                      </Typography>
+                    </Box>
+                    <Box>
+                      <Typography variant="caption" color="textSecondary">
+                        File Type
+                      </Typography>
+                      <Chip
+                        label={result.document_info.file_type}
+                        size="small"
+                        color="primary"
+                        variant="outlined"
+                      />
+                    </Box>
+                    <Box>
+                      <Typography variant="caption" color="textSecondary">
+                        File Size
+                      </Typography>
+                      <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                        {getFileSize(result.document_info.file_size)}
+                      </Typography>
+                    </Box>
+                  </Stack>
+                </CardContent>
+              </Card>
+            </Grid>
 
-            <Box sx={{ mb: 3 }}>
-              <input
-                accept=".txt,.pdf"
-                style={{ display: 'none' }}
-                id="file-upload"
-                type="file"
-                onChange={handleFileSelect}
-              />
-              <label htmlFor="file-upload">
-                <Button
-                  variant="outlined"
-                  component="span"
-                  fullWidth
-                  sx={{
-                    py: 2,
-                    borderStyle: 'dashed',
-                    '&:hover': {
-                      borderStyle: 'dashed',
-                    }
-                  }}
-                >
-                  Browse Files
-                </Button>
-              </label>
-            </Box>
-
-            <Box sx={{ display: 'flex', justifyContent: 'center', gap: 2, mb: 2 }}>
-              <Chip
-                icon={<Description />}
-                label="PDF Files"
-                variant="outlined"
-                color="primary"
-              />
-              <Chip
-                icon={<Description />}
-                label="TXT Files"
-                variant="outlined"
-                color="primary"
-              />
-            </Box>
-
-            <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center' }}>
-              Maximum file size: 10MB
-            </Typography>
-          </Paper>
-
-          {selectedFile && (
-            <Card sx={{ mb: 4, border: '1px solid', borderColor: 'primary.main' }}>
-              <CardContent>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                  <Description color="primary" sx={{ fontSize: 40 }} />
-                  <Box sx={{ flexGrow: 1 }}>
-                    <Typography variant="h6">{selectedFile.name}</Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      {(selectedFile.size / 1024 / 1024).toFixed(2)} MB • {selectedFile.type}
+            {/* Summary and Analysis */}
+            <Grid item xs={12} md={8}>
+              <Stack spacing={3}>
+                {/* Summary */}
+                <Card elevation={2}>
+                  <CardContent>
+                    <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                      <Typography variant="h6" sx={{ flex: 1 }}>
+                        📝 Summary
+                      </Typography>
+                      <Check sx={{ color: 'success.main' }} />
+                    </Box>
+                    <Typography variant="body2" color="textSecondary" sx={{ whiteSpace: 'pre-wrap', lineHeight: 1.6 }}>
+                      {result.summary}
                     </Typography>
+                  </CardContent>
+                </Card>
+
+                {/* Analysis */}
+                <Card elevation={2}>
+                  <CardContent>
+                    <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                      <Typography variant="h6" sx={{ flex: 1 }}>
+                        🔍 Detailed Analysis
+                      </Typography>
+                      <Check sx={{ color: 'success.main' }} />
+                    </Box>
+                    <Typography variant="body2" color="textSecondary" sx={{ whiteSpace: 'pre-wrap', lineHeight: 1.6 }}>
+                      {result.analysis}
+                    </Typography>
+                  </CardContent>
+                </Card>
+              </Stack>
+            </Grid>
+
+            {/* Conversation */}
+            <Grid item xs={12}>
+              <Card elevation={2}>
+                <CardContent>
+                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
+                    <Typography variant="h6" sx={{ flex: 1 }}>
+                      💬 AI-Generated Conversation
+                    </Typography>
+                    <Check sx={{ color: 'success.main' }} />
                   </Box>
-                  <CheckCircle color="success" sx={{ fontSize: 32 }} />
-                </Box>
-              </CardContent>
-            </Card>
-          )}
 
-          {uploading && (
-            <Box sx={{ mb: 4 }}>
-              <Typography variant="h6" sx={{ mb: 2 }}>
-                Uploading... {uploadProgress}%
-              </Typography>
-              <LinearProgress variant="determinate" value={uploadProgress} />
-            </Box>
-          )}
+                  <Box sx={{ bgcolor: 'grey.50', p: 3, borderRadius: 2, maxHeight: '500px', overflowY: 'auto' }}>
+                    {result.conversation && result.conversation.length > 0 ? (
+                      <Stack spacing={2}>
+                        {result.conversation.map((msg, index) => (
+                          <Box
+                            key={index}
+                            sx={{
+                              p: 2,
+                              bgcolor: msg.speaker === 'AI' ? 'primary.light' : 'grey.200',
+                              borderRadius: 2,
+                              color: msg.speaker === 'AI' ? 'white' : 'text.primary',
+                            }}
+                          >
+                            <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1 }}>
+                              {msg.speaker}:
+                            </Typography>
+                            <Typography variant="body2">
+                              {msg.message}
+                            </Typography>
+                          </Box>
+                        ))}
+                      </Stack>
+                    ) : (
+                      <Typography color="textSecondary">
+                        No conversation data available
+                      </Typography>
+                    )}
+                  </Box>
 
-          <Box sx={{ textAlign: 'center' }}>
-            <Button
-              variant="contained"
-              onClick={handleUpload}
-              disabled={!selectedFile || uploading}
-              size="large"
-              sx={{
-                px: 6,
-                py: 2,
-                fontSize: '1.1rem',
-                borderRadius: 3,
-              }}
-            >
-              {uploading ? 'Uploading...' : 'Upload & Convert to Conversation'}
-            </Button>
-          </Box>
-        </Box>
+                  <Button
+                    fullWidth
+                    variant="outlined"
+                    startIcon={<GetApp />}
+                    sx={{ mt: 2 }}
+                  >
+                    Download Conversation
+                  </Button>
+                </CardContent>
+              </Card>
+            </Grid>
+          </Grid>
+        ) : (
+          // Show Upload View
+          <Grid container spacing={3} sx={{ px: { xs: 2, md: 4 } }}>
+            <Grid item xs={12}>
+              {error && (
+                <Alert severity="error" onClose={() => setError('')} sx={{ mb: 2 }}>
+                  {error}
+                </Alert>
+              )}
+              {success && !processing && (
+                <Alert severity="success" onClose={() => setSuccess('')} sx={{ mb: 2 }}>
+                  {success}
+                </Alert>
+              )}
+            </Grid>
 
-        {error && (
-          <Alert severity="error" sx={{ mt: 4, maxWidth: 800, mx: 'auto' }}>
-            {error}
-          </Alert>
-        )}
+            <Grid item xs={12} md={6}>
+              <Card elevation={3} sx={{ borderRadius: 3 }}>
+                <CardContent sx={{ p: 4 }}>
+                  <Typography variant="h5" gutterBottom sx={{ fontWeight: 700, mb: 3 }}>
+                    📄 Upload Your Document
+                  </Typography>
 
-        {success && (
-          <Alert severity="success" sx={{ mt: 4, maxWidth: 800, mx: 'auto' }}>
-            {success}
-          </Alert>
+                  {/* Drag and Drop Area */}
+                  <Paper
+                    variant="outlined"
+                    onDragOver={handleDragOver}
+                    onDrop={handleDrop}
+                    sx={{
+                      p: 4,
+                      textAlign: 'center',
+                      cursor: 'pointer',
+                      border: '2px dashed',
+                      borderColor: selectedFile ? 'success.main' : 'primary.main',
+                      bgcolor: selectedFile ? 'success.lighter' : 'transparent',
+                      transition: 'all 0.3s',
+                      '&:hover': {
+                        borderColor: 'primary.main',
+                        bgcolor: 'action.hover',
+                      },
+                      mb: 2,
+                    }}
+                  >
+                    <CloudUpload sx={{ fontSize: 48, color: 'primary.main', mb: 2 }} />
+                    <Typography variant="h6" gutterBottom>
+                      {selectedFile ? '✓ File Selected' : 'Drag and Drop Your File'}
+                    </Typography>
+                    <Typography variant="body2" color="textSecondary" sx={{ mb: 2 }}>
+                      or
+                    </Typography>
+
+                    <Button
+                      variant="contained"
+                      component="label"
+                      disabled={uploading || processing}
+                    >
+                      Choose File
+                      <input
+                        type="file"
+                        hidden
+                        onChange={handleFileSelect}
+                        accept=".txt,.pdf"
+                        disabled={uploading || processing}
+                      />
+                    </Button>
+
+                    <Typography variant="caption" color="textSecondary" sx={{ display: 'block', mt: 2 }}>
+                      Supported formats: PDF, TXT (Max 50MB)
+                    </Typography>
+                  </Paper>
+
+                  {/* Selected File Info */}
+                  {selectedFile && (
+                    <Box sx={{ bgcolor: 'success.lighter', p: 2, borderRadius: 2, mb: 2 }}>
+                      <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
+                        <Check sx={{ color: 'success.main' }} />
+                        <Box>
+                          <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                            {selectedFile.name}
+                          </Typography>
+                          <Typography variant="caption" color="textSecondary">
+                            {getFileSize(selectedFile.size)}
+                          </Typography>
+                        </Box>
+                      </Stack>
+                    </Box>
+                  )}
+
+                  {/* Progress and Buttons */}
+                  {(uploading || processing) && (
+                    <Box sx={{ mb: 2 }}>
+                      <LinearProgress />
+                      <Typography variant="caption" color="textSecondary" sx={{ mt: 1, display: 'block' }}>
+                        {uploading ? 'Uploading...' : 'Processing with AI...'}
+                      </Typography>
+                    </Box>
+                  )}
+
+                  <Button
+                    fullWidth
+                    variant="contained"
+                    size="large"
+                    onClick={handleConvertDocument}
+                    disabled={!selectedFile || uploading || processing}
+                    startIcon={uploading || processing ? <CircularProgress size={20} /> : <CloudUpload />}
+                    sx={{ mt: 2 }}
+                  >
+                    {uploading ? 'Uploading...' : processing ? 'Processing...' : 'Convert to Conversation'}
+                  </Button>
+
+                  {selectedFile && !uploading && !processing && (
+                    <Button
+                      fullWidth
+                      variant="outlined"
+                      size="small"
+                      onClick={() => setSelectedFile(null)}
+                      sx={{ mt: 1 }}
+                    >
+                      Clear Selection
+                    </Button>
+                  )}
+                </CardContent>
+              </Card>
+            </Grid>
+
+            {/* Info Panel */}
+            <Grid item xs={12} md={6}>
+              <Card elevation={2} sx={{ height: '100%' }}>
+                <CardContent>
+                  <Typography variant="h6" gutterBottom sx={{ fontWeight: 700, mb: 3 }}>
+                    ℹ️ How It Works
+                  </Typography>
+
+                  <Stack spacing={3}>
+                    <Box>
+                      <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                        <Avatar sx={{ width: 32, height: 32, bgcolor: 'primary.main', mr: 2 }}>
+                          1
+                        </Avatar>
+                        <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
+                          Upload Document
+                        </Typography>
+                      </Box>
+                      <Typography variant="body2" color="textSecondary" sx={{ ml: 6 }}>
+                        Select a PDF or TXT file from your device.
+                      </Typography>
+                    </Box>
+
+                    <Box>
+                      <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                        <Avatar sx={{ width: 32, height: 32, bgcolor: 'primary.main', mr: 2 }}>
+                          2
+                        </Avatar>
+                        <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
+                          AI Processing
+                        </Typography>
+                      </Box>
+                      <Typography variant="body2" color="textSecondary" sx={{ ml: 6 }}>
+                        Our AI analyzes the document and generates summaries.
+                      </Typography>
+                    </Box>
+
+                    <Box>
+                      <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                        <Avatar sx={{ width: 32, height: 32, bgcolor: 'primary.main', mr: 2 }}>
+                          3
+                        </Avatar>
+                        <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
+                          View Results
+                        </Typography>
+                      </Box>
+                      <Typography variant="body2" color="textSecondary" sx={{ ml: 6 }}>
+                        Get conversation, summary, and detailed analysis instantly.
+                      </Typography>
+                    </Box>
+                  </Stack>
+
+                  <Divider sx={{ my: 3 }} />
+
+                  <Box sx={{ bgcolor: 'info.lighter', p: 2, borderRadius: 2 }}>
+                    <Box sx={{ display: 'flex', gap: 1 }}>
+                      <Info sx={{ color: 'info.main', flexShrink: 0 }} />
+                      <Box>
+                        <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1 }}>
+                          Pro Tips:
+                        </Typography>
+                        <Typography variant="caption" component="div" color="textSecondary" sx={{ mb: 0.5 }}>
+                          • Use clear, well-structured documents for best results
+                        </Typography>
+                        <Typography variant="caption" component="div" color="textSecondary" sx={{ mb: 0.5 }}>
+                          • PDF and TXT formats are fully supported
+                        </Typography>
+                        <Typography variant="caption" component="div" color="textSecondary">
+                          • Your documents are processed securely
+                        </Typography>
+                      </Box>
+                    </Box>
+                  </Box>
+                </CardContent>
+              </Card>
+            </Grid>
+          </Grid>
         )}
       </Box>
-
-      {/* Process Document Dialog */}
-      <Dialog
-        open={showProcessDialog}
-        onClose={() => setShowProcessDialog(false)}
-        maxWidth="sm"
-        fullWidth
-      >
-        <DialogTitle sx={{ textAlign: 'center', pb: 1 }}>
-          Process Document
-        </DialogTitle>
-        <DialogContent>
-          <Box sx={{ textAlign: 'center', py: 2 }}>
-            <CheckCircle sx={{ fontSize: 64, color: 'success.main', mb: 2 }} />
-            <Typography variant="h6" gutterBottom>
-              Document Uploaded Successfully!
-            </Typography>
-            <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
-              Your document "{uploadResult?.filename}" is ready for processing.
-              Our AI will analyze it and create an engaging conversation.
-            </Typography>
-            {processing && (
-              <Box sx={{ mt: 3 }}>
-                <Typography variant="body2" sx={{ mb: 1 }}>
-                  Processing document...
-                </Typography>
-                <LinearProgress />
-              </Box>
-            )}
-          </Box>
-        </DialogContent>
-        <DialogActions sx={{ px: 3, pb: 3 }}>
-          <Button onClick={() => setShowProcessDialog(false)} disabled={processing}>
-            Cancel
-          </Button>
-          <Button
-            onClick={handleProcessDocument}
-            variant="contained"
-            disabled={processing}
-            startIcon={processing ? undefined : <CheckCircle />}
-            sx={{ minWidth: 140 }}
-          >
-            {processing ? 'Processing...' : 'Process Document'}
-          </Button>
-        </DialogActions>
-      </Dialog>
     </Box>
   );
 };

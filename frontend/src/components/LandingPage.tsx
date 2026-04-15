@@ -8,9 +8,13 @@ import {
   Card,
   CardContent,
   Avatar,
-  Chip,
   Stack,
   Paper,
+  Tooltip,
+  Divider,
+  AppBar,
+  Toolbar,
+  IconButton,
 } from '@mui/material';
 import {
   CloudUpload,
@@ -20,9 +24,12 @@ import {
   Speed,
   AutoAwesome,
   Description,
-  SmartToy,
   ArrowForward,
   CheckCircle,
+  Login,
+  Info,
+  SmartToy,
+  Chip,
 } from '@mui/icons-material';
 
 interface LandingPageProps {
@@ -32,34 +39,34 @@ interface LandingPageProps {
 const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted }) => {
   const features = [
     {
-      icon: <Description sx={{ fontSize: 40, color: 'primary.main' }} />,
+      icon: <CloudUpload sx={{ fontSize: 48, color: 'primary.main' }} />,
       title: 'Document Upload',
-      description: 'Upload PDF or TXT files from your local device with drag-and-drop simplicity.',
+      description: 'Upload PDF or TXT files with drag-and-drop simplicity.',
     },
     {
-      icon: <Analytics sx={{ fontSize: 40, color: 'primary.main' }} />,
+      icon: <Analytics sx={{ fontSize: 48, color: 'primary.main' }} />,
       title: 'AI-Powered Analysis',
-      description: 'Advanced AI analyzes your documents, extracting key insights and themes automatically.',
+      description: 'Advanced AI extracts key insights and themes automatically.',
     },
     {
-      icon: <Chat sx={{ fontSize: 40, color: 'primary.main' }} />,
+      icon: <Chat sx={{ fontSize: 48, color: 'primary.main' }} />,
       title: 'Natural Conversations',
-      description: 'Transform static documents into engaging, natural conversations between AI personas.',
+      description: 'Transform documents into engaging, natural dialogues.',
     },
     {
-      icon: <Security sx={{ fontSize: 40, color: 'primary.main' }} />,
+      icon: <Security sx={{ fontSize: 48, color: 'primary.main' }} />,
       title: 'Secure & Private',
-      description: 'Your documents are processed securely with enterprise-grade privacy protection.',
+      description: 'Enterprise-grade privacy protection for your documents.',
     },
     {
-      icon: <Speed sx={{ fontSize: 40, color: 'primary.main' }} />,
+      icon: <Speed sx={{ fontSize: 48, color: 'primary.main' }} />,
       title: 'Lightning Fast',
-      description: 'Get results in seconds with our optimized AI processing pipeline.',
+      description: 'Get results in seconds with optimized processing.',
     },
     {
-      icon: <AutoAwesome sx={{ fontSize: 40, color: 'primary.main' }} />,
+      icon: <AutoAwesome sx={{ fontSize: 48, color: 'primary.main' }} />,
       title: 'Smart Summaries',
-      description: 'Receive comprehensive summaries and detailed analysis alongside conversations.',
+      description: 'Comprehensive summaries and detailed analysis included.',
     },
   ];
 
@@ -67,26 +74,44 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted }) => {
     {
       number: '01',
       title: 'Upload Document',
-      description: 'Select any PDF or TXT file from your local device',
+      description: 'Select any PDF or TXT file from your device',
     },
     {
       number: '02',
       title: 'AI Processing',
-      description: 'Our AI analyzes and understands your document content',
+      description: 'Our AI analyzes and understands your content',
     },
     {
       number: '03',
       title: 'View Conversation',
-      description: 'Explore the generated conversation with summaries and insights',
+      description: 'Explore generated conversations and insights',
     },
   ];
 
   return (
     <Box sx={{ minHeight: '100vh', bgcolor: 'background.default' }}>
+      {/* Navigation Bar */}
+      <AppBar position="sticky" elevation={0} sx={{ bgcolor: 'white', borderBottom: '1px solid rgba(0,0,0,0.08)' }}>
+        <Toolbar>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <SmartToy sx={{ fontSize: 32, color: 'primary.main' }} />
+            <Typography variant="h5" sx={{ fontWeight: 700, color: 'primary.main' }}>
+              InkToFrame
+            </Typography>
+          </Box>
+          <Box sx={{ flex: 1 }} />
+          <Tooltip title="View documentation">
+            <IconButton sx={{ color: 'text.primary' }}>
+              <Info />
+            </IconButton>
+          </Tooltip>
+        </Toolbar>
+      </AppBar>
+
       {/* Hero Section */}
       <Box
         sx={{
-          bgcolor: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
           color: 'white',
           py: { xs: 8, md: 12 },
           position: 'relative',
@@ -118,46 +143,60 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted }) => {
                   lineHeight: 1.6,
                 }}
               >
-                Upload any PDF or TXT file and watch as our AI transforms it into
-                engaging, natural conversations. Get summaries, analysis, and
-                interactive dialogues instantly.
+                Upload any PDF or TXT file and watch as our AI transforms it into engaging, natural conversations. Get summaries, analysis, and interactive dialogues instantly.
               </Typography>
-              <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
-                <Button
-                  variant="contained"
-                  size="large"
-                  onClick={onGetStarted}
-                  endIcon={<ArrowForward />}
-                  sx={{
-                    bgcolor: 'white',
-                    color: 'primary.main',
-                    fontSize: '1.1rem',
-                    py: 1.5,
-                    px: 4,
-                    '&:hover': {
-                      bgcolor: 'grey.100',
-                    },
-                  }}
-                >
-                  Get Started Free
-                </Button>
-                <Button
-                  variant="outlined"
-                  size="large"
-                  sx={{
-                    borderColor: 'white',
-                    color: 'white',
-                    fontSize: '1.1rem',
-                    py: 1.5,
-                    px: 4,
-                    '&:hover': {
-                      borderColor: 'grey.200',
-                      bgcolor: 'rgba(255, 255, 255, 0.1)',
-                    },
-                  }}
-                >
-                  Learn More
-                </Button>
+              
+              {/* Main Action Buttons */}
+              <Stack direction={{ xs: 'column', sm: 'row' }} spacing={3} sx={{ mb: 4 }}>
+                <Tooltip title="Click to upload a document">
+                  <Box>
+                    <Button
+                      variant="contained"
+                      size="large"
+                      onClick={onGetStarted}
+                      startIcon={<CloudUpload sx={{ fontSize: 24 }} />}
+                      sx={{
+                        bgcolor: 'white',
+                        color: 'primary.main',
+                        fontSize: '1.1rem',
+                        py: 1.5,
+                        px: 4,
+                        fontWeight: 700,
+                        width: '100%',
+                        '&:hover': {
+                          bgcolor: 'grey.100',
+                        },
+                      }}
+                    >
+                      Upload Document
+                    </Button>
+                  </Box>
+                </Tooltip>
+                <Tooltip title="Sign up or log in">
+                  <Box>
+                    <Button
+                      variant="outlined"
+                      size="large"
+                      onClick={onGetStarted}
+                      startIcon={<Login sx={{ fontSize: 24 }} />}
+                      sx={{
+                        borderColor: 'white',
+                        color: 'white',
+                        fontSize: '1.1rem',
+                        py: 1.5,
+                        px: 4,
+                        fontWeight: 700,
+                        width: '100%',
+                        '&:hover': {
+                          borderColor: 'grey.200',
+                          bgcolor: 'rgba(255, 255, 255, 0.1)',
+                        },
+                      }}
+                    >
+                      Login / Sign Up
+                    </Button>
+                  </Box>
+                </Tooltip>
               </Stack>
             </Grid>
             <Grid item xs={12} md={6}>
