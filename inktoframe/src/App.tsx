@@ -84,7 +84,7 @@ export default function HomePage() {
             transition={{ duration: 0.8 }}
             className="text-5xl md:text-7xl font-bold tracking-tight"
           >
-            InkToFrame
+            InkToFrame ✨ CHANGES WORKING
           </motion.h1>
         </div>
         <p className="relative text-lg md:text-xl max-w-2xl text-gray-400 mb-8 z-10">
@@ -152,7 +152,7 @@ export default function HomePage() {
             // Top section - spread across full width
             { src: "/anime1.jpg", pos: "top-[8%] left-[5%] rotate-[-6deg]", z: "z-20" },
             { src: "/anime2.jpg", pos: "top-[5%] left-[25%] rotate-[4deg]", z: "z-15" },
-            { src: "/anime3.jpg", pos: "top-[10%] left-[48%] rotate-[2deg]", z: "z-10" },
+            { src: "/anime3b.jpg", pos: "top-[10%] left-[48%] rotate-[2deg]", z: "z-10" },
             { src: "/anime5.jpg", pos: "top-[6%] right-[10%] rotate-[5deg]", z: "z-25" },
 
             // Middle section - spread evenly
