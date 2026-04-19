@@ -84,7 +84,7 @@ export default function HomePage() {
             transition={{ duration: 0.8 }}
             className="text-5xl md:text-7xl font-bold tracking-tight"
           >
-            InkToFrame ✨ CHANGES WORKING
+            InkToFrame
           </motion.h1>
         </div>
         <p className="relative text-lg md:text-xl max-w-2xl text-gray-400 mb-8 z-10">
