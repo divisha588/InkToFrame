@@ -59,6 +59,7 @@ export default function HomePage() {
   };
 
   return (
+    
     <div className="min-h-screen bg-gradient-to-b from-[#050505] via-[#0a0a0f] to-[#050505] text-white">
       {/* Hero Section */}
       <section className="relative flex flex-col items-center justify-end text-center min-h-screen px-6 bg-[radial-gradient(circle_at_top,rgba(120,80,255,0.15),transparent_60%)] overflow-hidden pb-32">
@@ -145,33 +146,35 @@ export default function HomePage() {
       </section>
 
       {/* Manga Wall Poster Section */}
-      <section className="py-28 px-6 bg-[#080810] flex flex-col items-center">
+      <section className="py-12 px-3 bg-[#080810] flex flex-col items-center">
         
-        <div className="relative w-full max-w-6xl h-[700px]">
+        <div className="relative w-full h-screen">
           {[
-            // Top section - spread across full width
-            { src: "/anime1.jpg", pos: "top-[8%] left-[5%] rotate-[-6deg]", z: "z-20" },
-            { src: "/anime2.jpg", pos: "top-[5%] left-[25%] rotate-[4deg]", z: "z-15" },
-            { src: "/anime3b.jpg", pos: "top-[10%] left-[48%] rotate-[2deg]", z: "z-10" },
-            { src: "/anime5.jpg", pos: "top-[6%] right-[10%] rotate-[5deg]", z: "z-25" },
+            // Top row
+            { src: "/anime1.jpg", pos: "top-[4%] left-[0%] rotate-[-6deg]", z: "z-20" },
+            { src: "/anime2.jpg", pos: "top-[4%] left-[28%] rotate-[4deg]", z: "z-15" },
+            { src: "/anime5.jpg", pos: "top-[4%] left-[52%] rotate-[2deg]", z: "z-10" },
+            { src: "/anime7.jpg", pos: "top-[4%] right-[2%] rotate-[5deg]", z: "z-25" },
 
-            // Middle section - spread evenly
-            { src: "/anime4.jpg", pos: "top-[32%] left-[8%] rotate-[-3deg]", z: "z-30" },
-            { src: "/anime6.jpg", pos: "top-[35%] left-[32%] rotate-[-2deg]", z: "z-20" },
-            { src: "/anime9.jpg", pos: "top-[38%] left-[58%] rotate-[1deg]", z: "z-15" },
-            { src: "/anime10.jpg", pos: "top-[34%] right-[12%] rotate-[2deg]", z: "z-18" },
+            // Middle row
+            { src: "/anime4.jpg", pos: "top-[36%] left-[7%] rotate-[-3deg]", z: "z-30" },
+            { src: "/anime6.jpg", pos: "top-[36%] left-[31%] rotate-[-2deg]", z: "z-20" },
+            { src: "/anime8.jpg", pos: "top-[36%] left-[55%] rotate-[1deg]", z: "z-10" },
+            { src: "/anime10.jpg", pos: "top-[36%] left-[79%] rotate-[2deg]", z: "z-18" },
 
-            // Lower section - spread across
-            { src: "/anime7.jpg", pos: "top-[58%] left-[15%] rotate-[3deg]", z: "z-20" },
-            { src: "/anime8.jpg", pos: "top-[62%] left-[42%] rotate-[-4deg]", z: "z-30" },
-            { src: "/anime11.jpg", pos: "top-[65%] right-[10%] rotate-[-3deg]", z: "z-22" }
+            // Bottom row
+            { src: "/anime3b.jpg", pos: "top-[68%] left-[0%] rotate-[3deg]", z: "z-20" },
+            { src: "/anime9.jpg", pos: "top-[68%] left-[28%] rotate-[-4deg]", z: "z-30" },
+            { src: "/anime11.jpg", pos: "top-[68%] left-[52%] rotate-[-3deg]", z: "z-22" },
+            { src: "/anime12.jpg", pos: "top-[68%] right-[2%] rotate-[-3deg]", z: "z-22" }
           ].map((item, i) => (
             <motion.div
               key={i}
               initial={{ opacity: 0, scale: 0.95 }}
               whileInView={{ opacity: 1, scale: 1 }}
               transition={{ delay: i * 0.08 }}
-              className={`absolute ${item.pos} w-40 md:w-52 h-64 md:h-72`}
+              // className={`absolute ${item.pos} w-150 md:w-150 md:w-100 h-98 md:h-[50rem]`}
+              className={`absolute ${item.pos} w-[22%] h-[28%]`}
             >
               <div className="relative group">
                 {/* tape effect */}
@@ -189,7 +192,7 @@ export default function HomePage() {
       </section>
 
       {/* Upload Section */}
-      <section className="py-24 px-6 flex flex-col items-center bg-[radial-gradient(circle_at_center,rgba(80,120,255,0.12),transparent_70%)]">
+      <section className="mt-24 py-24 px-6 flex flex-col items-center bg-[radial-gradient(circle_at_center,rgba(80,120,255,0.12),transparent_70%)]">
         <h2 className="text-4xl font-bold mb-6">Upload Your Documents</h2>
         <p className="text-gray-400 mb-8 text-center max-w-xl">
           Upload files such as PDF, DOCX, or other document formats to integrate
@@ -249,7 +252,9 @@ export default function HomePage() {
         <p className="text-gray-400 mb-6">
           Mint your identity and shape the future of the KPRverse.
         </p>
-        <Button className="bg-white text-black hover:bg-gray-200">Get Started</Button>
+        <Button className="text-black bg-white hover:bg-gray-200 px-12 py-7 text-xl md:text-2xl rounded-3xl shadow-2xl w-full max-w-md">
+          Get Started
+        </Button>
       </section>
 
       {/* Footer */}
